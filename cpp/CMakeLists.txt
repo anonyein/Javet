@@ -14,6 +14,8 @@
 # limitations under the License.
 
 cmake_minimum_required(VERSION 3.10)
+set(CMAKE_C_COMPILER_WORKS TRUE)
+set(CMAKE_CXX_COMPILER_WORKS TRUE)
 
 # Validation
 if(!$ENV{JAVA_HOME})
