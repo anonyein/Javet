@@ -29,7 +29,13 @@ public abstract class RuntimeOptions<Options extends RuntimeOptions<Options>> {
      *
      * @since 3.0.3
      */
-    protected boolean snapshotEnabled;
+    protected boolean createSnapshotEnabled;
+    /**
+     * The Snapshot blob.
+     *
+     * @since 3.0.3
+     */
+    protected byte[] snapshotBlob;
 
     /**
      * Instantiates a new Runtime options.
@@ -37,28 +43,51 @@ public abstract class RuntimeOptions<Options extends RuntimeOptions<Options>> {
      * @since 1.0.0
      */
     public RuntimeOptions() {
-        snapshotEnabled = false;
+        createSnapshotEnabled = false;
+        snapshotBlob = null;
     }
 
     /**
-     * Is snapshot enabled.
+     * Get snapshot blob in byte array.
+     *
+     * @return the byte array
+     * @since 3.0.3
+     */
+    public byte[] getSnapshotBlob() {
+        return snapshotBlob;
+    }
+
+    /**
+     * Is create snapshot enabled.
      *
      * @return true : enabled, false : disabled
      * @since 3.0.3
      */
-    public boolean isSnapshotEnabled() {
-        return snapshotEnabled;
+    public boolean isCreateSnapshotEnabled() {
+        return createSnapshotEnabled;
     }
 
     /**
-     * Sets snapshot enabled.
+     * Sets create snapshot enabled.
      *
-     * @param snapshotEnabled the snapshot enabled
+     * @param createSnapshotEnabled the create snapshot enabled
      * @return the self
      * @since 3.0.3
      */
-    public RuntimeOptions<Options> setSnapshotEnabled(boolean snapshotEnabled) {
-        this.snapshotEnabled = snapshotEnabled;
+    public RuntimeOptions<Options> setCreateSnapshotEnabled(boolean createSnapshotEnabled) {
+        this.createSnapshotEnabled = createSnapshotEnabled;
+        return this;
+    }
+
+    /**
+     * Sets snapshot blob.
+     *
+     * @param snapshotBlob the snapshot blob
+     * @return the self
+     * @since 3.0.3
+     */
+    public RuntimeOptions<Options> setSnapshotBlob(byte[] snapshotBlob) {
+        this.snapshotBlob = snapshotBlob;
         return this;
     }
 }
