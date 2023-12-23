@@ -87,7 +87,7 @@ public abstract class RuntimeOptions<Options extends RuntimeOptions<Options>> {
      * @since 3.0.3
      */
     public RuntimeOptions<Options> setSnapshotBlob(byte[] snapshotBlob) {
-        this.snapshotBlob = snapshotBlob;
+        this.snapshotBlob = snapshotBlob == null || snapshotBlob.length == 0 ? null : snapshotBlob;
         return this;
     }
 }
