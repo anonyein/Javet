@@ -75,14 +75,18 @@ namespace Javet {
     V8Runtime::V8Runtime(
         node::MultiIsolatePlatform* v8PlatformPointer,
         std::shared_ptr<node::ArrayBufferAllocator> nodeArrayBufferAllocator) noexcept
-        : nodeEnvironment(nullptr, node::FreeEnvironment), nodeIsolateData(nullptr, node::FreeIsolateData), uvLoop(), v8Locker(nullptr), v8SnapshotCreator(nullptr), v8StartupData(nullptr) {
-        purgeEventLoopBeforeClose = false;
-        this->nodeArrayBufferAllocator = nodeArrayBufferAllocator;
+        : nodeEnvironment(nullptr, node::FreeEnvironment), nodeIsolateData(nullptr, node::FreeIsolateData), uvLoop(),
 #else
     V8Runtime::V8Runtime(
         V8Platform * v8PlatformPointer,
         std::shared_ptr<V8ArrayBufferAllocator> v8ArrayBufferAllocator) noexcept
-        : v8Locker(nullptr), v8SnapshotCreator(nullptr), v8StartupData(nullptr) {
+        :
+#endif
+        v8Locker(nullptr), v8SnapshotCreator(nullptr), v8StartupData(nullptr, [](v8::StartupData* x) { if (x->raw_size > 0) { delete[] x->data; } }) {
+#ifdef ENABLE_NODE
+        purgeEventLoopBeforeClose = false;
+        this->nodeArrayBufferAllocator = nodeArrayBufferAllocator;
+#else
         this->v8ArrayBufferAllocator = v8ArrayBufferAllocator;
 #endif
         externalV8Runtime = nullptr;
@@ -219,13 +223,7 @@ namespace Javet {
             else {
                 v8Isolate->Dispose();
             }
-            if (v8StartupData) {
-                if (v8StartupData->raw_size > 0) {
-                    delete[] v8StartupData->data;
-                    v8StartupData->raw_size = 0;
-                }
-                v8StartupData.reset();
-            }
+            v8StartupData.reset();
 #ifdef ENABLE_NODE
             while (!isIsolateFinished) {
                 uv_run(&uvLoop, UV_RUN_ONCE);
@@ -239,21 +237,52 @@ namespace Javet {
         }
     }
 
-    jbyteArray V8Runtime::CreateSnapshot(JNIEnv* jniEnv) noexcept {
+    jbyteArray V8Runtime::CreateSnapshot(JNIEnv * jniEnv) noexcept {
         jbyteArray jbytes = nullptr;
         if (v8SnapshotCreator) {
+#ifdef ENABLE_NODE
+            auto v8IsolateScope = GetV8IsolateScope();
+            v8::MaybeLocal<v8::Context> v8MaybeLocalContext;
+            {
+                V8HandleScope v8HandleScope(v8Isolate);
+                auto v8LocalContext = GetV8LocalContext();
+                auto v8ContextScope = GetV8ContextScope(v8LocalContext);
+                // Backup context and global object (Begin)
+                v8PersistentContext.Reset();
+                v8GlobalObject.Reset();
+                // Backup context and global object (End)
+                nodeIsolateData->Serialize(v8SnapshotCreator.get());
+                nodeEnvironment->Serialize(v8SnapshotCreator.get());
+                v8SnapshotCreator->SetDefaultContext(v8LocalContext, { node::SerializeNodeContextInternalFields, nodeEnvironment.get() });
+                v8MaybeLocalContext = v8::MaybeLocal<v8::Context>(v8LocalContext);
+            }
+            // TODO: Unknown external reference
+            v8::StartupData newV8StartupData = v8SnapshotCreator->CreateBlob(v8::SnapshotCreator::FunctionCodeHandling::kKeep);
+            if (newV8StartupData.IsValid()) {
+                jbytes = jniEnv->NewByteArray(newV8StartupData.raw_size);
+                jboolean isCopy;
+                void* data = jniEnv->GetPrimitiveArrayCritical(jbytes, &isCopy);
+                memcpy(data, newV8StartupData.data, newV8StartupData.raw_size);
+                jniEnv->ReleasePrimitiveArrayCritical(jbytes, data, JNI_ABORT);
+                delete[] newV8StartupData.data;
+            }
+            {
+                V8HandleScope v8HandleScope(v8Isolate);
+                auto v8LocalContext = v8MaybeLocalContext.ToLocalChecked();
+                auto v8ContextScope = GetV8ContextScope(v8LocalContext);
+                // Restore context and global object (Begin)
+                v8PersistentContext.Reset(v8Isolate, v8LocalContext);
+                v8GlobalObject.Reset(
+                    v8Isolate, v8LocalContext->Global()->GetPrototype()->ToObject(v8LocalContext).ToLocalChecked());
+                // Restore context and global object (End)
+            }
+#else
             // Backup context and global object (Begin)
             auto v8LocalContext = GetV8LocalContext();
             v8PersistentContext.Reset();
             v8GlobalObject.Reset();
             // Backup context and global object (End)
-#ifdef ENABLE_NODE
-            nodeIsolateData->Serialize(v8SnapshotCreator.get());
-            nodeEnvironment->Serialize(v8SnapshotCreator.get());
-            v8SnapshotCreator->SetDefaultContext(v8LocalContext, { node::SerializeNodeContextInternalFields, nodeEnvironment.get() });
-#else
             v8SnapshotCreator->SetDefaultContext(v8LocalContext);
-#endif
             v8::StartupData newV8StartupData = v8SnapshotCreator->CreateBlob(v8::SnapshotCreator::FunctionCodeHandling::kKeep);
             if (newV8StartupData.IsValid()) {
                 jbytes = jniEnv->NewByteArray(newV8StartupData.raw_size);
@@ -268,6 +297,7 @@ namespace Javet {
             v8GlobalObject.Reset(
                 v8Isolate, v8LocalContext->Global()->GetPrototype()->ToObject(v8LocalContext).ToLocalChecked());
             // Restore context and global object (End)
+#endif
         }
         return jbytes;
     }
@@ -361,7 +391,7 @@ namespace Javet {
             const std::vector<intptr_t>& externalReferences = node::SnapshotBuilder::CollectExternalReferences();
             v8Isolate = v8::Isolate::Allocate();
             v8PlatformPointer->RegisterIsolate(v8Isolate, &uvLoop);
-            v8SnapshotCreator.reset(new v8::SnapshotCreator(v8Isolate, externalReferences.data()));
+            v8SnapshotCreator.reset(new v8::SnapshotCreator(v8Isolate, externalReferences.data(), v8StartupData.get()));
             v8Isolate->SetCaptureStackTraceForUncaughtExceptions(true, 10, v8::StackTrace::StackTraceOptions::kDetailed);
         }
         else {
@@ -385,9 +415,7 @@ namespace Javet {
             v8::Isolate::CreateParams createParams;
             createParams.array_buffer_allocator = v8ArrayBufferAllocator.get();
             createParams.oom_error_callback = Javet::Callback::OOMErrorCallback;
-            if (v8StartupData) {
-                createParams.snapshot_blob = v8StartupData.get();
-            }
+            createParams.snapshot_blob = v8StartupData.get();
             v8Isolate = v8::Isolate::New(createParams);
         }
         v8Isolate->SetPromiseRejectCallback(Javet::Callback::JavetPromiseRejectCallback);
@@ -402,14 +430,14 @@ namespace Javet {
 #else
         const v8::internal::Tagged<V8InternalObject>& v8InternalObject) noexcept {
 #endif
-                V8TryCatch v8TryCatch(v8Context->GetIsolate());
-                jobject externalV8Value = Javet::Converter::ToExternalV8Value(jniEnv, this, v8Context, v8InternalObject);
-                if (v8TryCatch.HasCaught()) {
-                    DELETE_LOCAL_REF(jniEnv, externalV8Value);
-                    return Javet::Exceptions::ThrowJavetExecutionException(jniEnv, this, v8Context, v8TryCatch);
-                }
-                return externalV8Value;
-            }
+        V8TryCatch v8TryCatch(v8Context->GetIsolate());
+        jobject externalV8Value = Javet::Converter::ToExternalV8Value(jniEnv, this, v8Context, v8InternalObject);
+        if (v8TryCatch.HasCaught()) {
+            DELETE_LOCAL_REF(jniEnv, externalV8Value);
+            return Javet::Exceptions::ThrowJavetExecutionException(jniEnv, this, v8Context, v8TryCatch);
+        }
+        return externalV8Value;
+    }
 
     jobject V8Runtime::SafeToExternalV8Value(
         JNIEnv * jniEnv,
@@ -428,5 +456,5 @@ namespace Javet {
         CloseV8Context();
         CloseV8Isolate();
     }
-    }
+}
 
