@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2023. caoccao.com Sam Cao
+ * Copyright (c) 2021-2024. caoccao.com Sam Cao
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 package com.caoccao.javet.interop.proxy;
 
 import com.caoccao.javet.annotations.V8Function;
+import com.caoccao.javet.utils.StringUtils;
 import com.caoccao.javet.values.reference.V8ValueObject;
 
 import java.lang.reflect.Method;
@@ -50,7 +51,7 @@ public final class JavetReflectionProxyV8ValueObjectInvocationHandler
         } else if (v8ValueReference != null && !v8ValueReference.isClosed()) {
             if (method.isAnnotationPresent(V8Function.class)) {
                 String aliasMethodName = method.getAnnotation(V8Function.class).name();
-                if (aliasMethodName != null && !aliasMethodName.isEmpty()) {
+                if (!StringUtils.isEmpty(aliasMethodName)) {
                     methodName = aliasMethodName;
                 }
             }

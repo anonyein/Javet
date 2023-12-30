@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2023. caoccao.com Sam Cao
+ * Copyright (c) 2021-2024. caoccao.com Sam Cao
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -47,7 +47,7 @@ public enum JSRuntimeType {
      */
     V8(
             "v8",
-            "12.0.267.8",
+            "12.1.285.17",
             V8RuntimeOptions::new,
             o -> o instanceof V8RuntimeOptions);
 

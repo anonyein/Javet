@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2023. caoccao.com Sam Cao
+ * Copyright (c) 2021-2024. caoccao.com Sam Cao
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,8 @@ package com.caoccao.javet.interop.converters;
 
 import com.caoccao.javet.BaseTestJavetRuntime;
 import com.caoccao.javet.exceptions.JavetException;
+import com.caoccao.javet.utils.SimpleList;
+import com.caoccao.javet.utils.SimpleSet;
 import com.caoccao.javet.values.virtual.V8VirtualIterator;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -144,7 +146,7 @@ public class TestJavetBridgeConverter extends BaseTestJavetRuntime {
 
     @Test
     public void testLongList() throws JavetException {
-        List<Long> longList = Collections.unmodifiableList(Arrays.asList(1L, 2L));
+        List<Long> longList = Collections.unmodifiableList(SimpleList.of(1L, 2L));
         v8Runtime.getGlobalObject().set("a", longList);
         assertEquals(2, (Integer) v8Runtime.getExecutor("a.size()").executeObject());
         assertEquals(1L, (Long) v8Runtime.getExecutor("a[0]").executeObject());
@@ -178,10 +180,7 @@ public class TestJavetBridgeConverter extends BaseTestJavetRuntime {
 
     @Test
     public void testSet() throws JavetException {
-        Set<String> set = new HashSet<String>() {{
-            add("x");
-            add("y");
-        }};
+        Set<String> set = SimpleSet.of("x", "y");
         v8Runtime.getGlobalObject().set("set", set);
         assertSame(set, v8Runtime.getGlobalObject().getObject("set"));
         assertTrue((Boolean) v8Runtime.getExecutor("set.contains('x')").executeObject());

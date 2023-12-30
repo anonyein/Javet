@@ -1,5 +1,5 @@
 '''
-  Copyright (c) 2021-2023 caoccao.com Sam Cao
+  Copyright (c) 2021-2024. caoccao.com Sam Cao
   All rights reserved.
 
   Licensed under the Apache License, Version 2.0 (the "License");
@@ -160,7 +160,7 @@ class ChangeV8Version(ChangeVersion):
 def main():
   change_node_version = ChangeNodeVersion('20.10.0')
   change_node_version.update()
-  change_v8_version = ChangeV8Version('12.0.267.8')
+  change_v8_version = ChangeV8Version('12.1.285.17')
   change_v8_version.update()
   return 0
 

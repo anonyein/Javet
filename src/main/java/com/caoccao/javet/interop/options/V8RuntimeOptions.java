@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2023. caoccao.com Sam Cao
+ * Copyright (c) 2021-2024. caoccao.com Sam Cao
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,8 @@
  */
 
 package com.caoccao.javet.interop.options;
+
+import com.caoccao.javet.utils.StringUtils;
 
 /**
  * The type V8 runtime options.
@@ -64,7 +66,7 @@ public final class V8RuntimeOptions extends RuntimeOptions<V8RuntimeOptions> {
      * @since 1.0.0
      */
     public V8RuntimeOptions setGlobalName(String globalName) {
-        this.globalName = globalName == null || globalName.isEmpty() ? null : globalName;
+        this.globalName = StringUtils.isEmpty(globalName) ? null : globalName;
         return this;
     }
 }

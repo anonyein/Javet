@@ -1,4 +1,4 @@
-# Copyright (c) 2021-2023 caoccao.com Sam Cao
+# Copyright (c) 2021-2024. caoccao.com Sam Cao
 # All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -98,6 +98,7 @@ if(DEFINED V8_DIR)
     list(APPEND includeDirs
         ${V8_DIR}
         ${V8_DIR}/include
+        ${V8_DIR}/third_party/abseil-cpp
         ${V8_RELEASE_DIR}/gen)
     if(DEFINED ENABLE_I18N)
         add_definitions(-DENABLE_I18N -DV8_INTL_SUPPORT)

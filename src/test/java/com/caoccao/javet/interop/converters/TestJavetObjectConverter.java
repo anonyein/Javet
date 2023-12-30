@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021-2023. caoccao.com Sam Cao
+ * Copyright (c) 2021-2024. caoccao.com Sam Cao
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,12 +27,17 @@ import com.caoccao.javet.exceptions.JavetError;
 import com.caoccao.javet.exceptions.JavetException;
 import com.caoccao.javet.interfaces.IJavetMappable;
 import com.caoccao.javet.utils.JavetDateTimeUtils;
+import com.caoccao.javet.utils.SimpleList;
+import com.caoccao.javet.utils.SimpleSet;
 import com.caoccao.javet.values.V8Value;
 import com.caoccao.javet.values.reference.*;
 import org.junit.jupiter.api.Test;
 
 import java.time.ZonedDateTime;
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.DoubleStream;
 import java.util.stream.IntStream;
 import java.util.stream.LongStream;
@@ -90,7 +95,7 @@ public class TestJavetObjectConverter extends BaseTestJavetRuntime {
         }
         // ArrayList
         try (V8ValueArray v8ValueArray = converter.toV8Value(
-                v8Runtime, Arrays.asList("abc", 123))) {
+                v8Runtime, SimpleList.of("abc", 123))) {
             assertEquals(2, v8ValueArray.getLength());
             assertEquals("abc", v8ValueArray.getString(0));
             assertEquals(123, v8ValueArray.getInteger(1));
@@ -237,8 +242,7 @@ public class TestJavetObjectConverter extends BaseTestJavetRuntime {
             assertEquals(1, set.size());
             assertTrue(set.contains("abc"));
         }
-        try (V8ValueSet v8ValueSet = converter.toV8Value(
-                v8Runtime, new HashSet<Object>(Arrays.asList("a", "b", "c")))) {
+        try (V8ValueSet v8ValueSet = converter.toV8Value(v8Runtime, SimpleSet.of("a", "b", "c"))) {
             assertEquals(3, v8ValueSet.getSize());
             assertTrue(v8ValueSet.has("a"));
             assertTrue(v8ValueSet.has("b"));
