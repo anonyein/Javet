@@ -56,7 +56,7 @@ jobs:
         fetch v8
         cd v8
         git checkout ${{ env.JAVET_V8_VERSION }}
-        patch -p1 -f < ../scripts/v8.patches
+        patch -p0 -f < ${{ env.ROOT }}/Javet/scripts/v8.patches
         ./build/install-build-deps.sh
         cd ..
         echo 'target_os = ["android"]' >> .gclient
@@ -130,7 +130,7 @@ jobs:
         fetch v8
         cd v8
         git checkout ${{ env.JAVET_V8_VERSION }}
-        patch -p1 -f < ../scripts/v8.patches
+        patch -p0 -f < ${{ env.ROOT }}/Javet/scripts/v8.patches
         ./build/install-build-deps.sh
         cd ..
         echo 'target_os = ["android"]' >> .gclient
@@ -204,7 +204,7 @@ jobs:
         fetch v8
         cd v8
         git checkout ${{ env.JAVET_V8_VERSION }}
-        patch -p1 -f < ../scripts/v8.patches
+        patch -p0 -f < ${{ env.ROOT }}/Javet/scripts/v8.patches
         ./build/install-build-deps.sh
         cd ..
         echo 'target_os = ["android"]' >> .gclient
@@ -278,7 +278,7 @@ jobs:
         fetch v8
         cd v8
         git checkout ${{ env.JAVET_V8_VERSION }}
-        patch -p1 -f < ../scripts/v8.patches
+        patch -p0 -f < ${{ env.ROOT }}/Javet/scripts/v8.patches
         ./build/install-build-deps.sh
         cd ..
         echo 'target_os = ["android"]' >> .gclient
