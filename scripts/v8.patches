@@ -1,0 +1,49 @@
+--- src/wasm/wasm-engine.cc	2023-12-30 16:00:15.000000000 +0800
++++ src/wasm/wasm-engine.cc	2023-12-30 16:23:08.138504400 +0800
+@@ -160,7 +160,11 @@
+       : script_id_(script->id()), isolate_(isolate) {
+     DCHECK(IsString(script->name()) || IsUndefined(script->name()));
+     if (IsString(script->name())) {
+-      source_url_ = String::cast(script->name())->ToCString();
++      std::unique_ptr<char[]> source_url =
++          String::cast(script->name())->ToCString();
++      // Convert from {unique_ptr} to {shared_ptr}.
++      source_url_ = {source_url.release(), source_url.get_deleter()};      
++      // source_url_ = String::cast(script->name())->ToCString();
+     }
+     auto global_handle =
+         script->GetIsolate()->global_handles()->Create(*script);
+@@ -192,9 +196,10 @@
+ 
+   int script_id() const { return script_id_; }
+ 
+-  const std::shared_ptr<const char[]>& source_url() const {
+-    return source_url_;
+-  }
++  const std::shared_ptr<const char>& source_url() const { return source_url_; }
++  // const std::shared_ptr<const char[]>& source_url() const {
++  //   return source_url_;
++  // }
+ 
+  private:
+   // Store the location in a unique_ptr so that its address stays the same even
+@@ -210,7 +215,8 @@
+   // The shared pointer is kept alive by unlogged code, even if this entry is
+   // collected in the meantime.
+   // TODO(chromium:1132260): Revisit this for huge URLs.
+-  std::shared_ptr<const char[]> source_url_;
++  std::shared_ptr<const char> source_url_;
++  // std::shared_ptr<const char[]> source_url_;
+ 
+   // The Isolate that the handled script belongs to.
+   Isolate* isolate_;
+@@ -428,7 +434,8 @@
+   // the respective source URL.
+   struct CodeToLogPerScript {
+     std::vector<WasmCode*> code;
+-    std::shared_ptr<const char[]> source_url;
++    std::shared_ptr<const char> source_url;
++    // std::shared_ptr<const char[]> source_url;
+   };
+   std::unordered_map<int, CodeToLogPerScript> code_to_log;
+ 
