@@ -82,6 +82,7 @@ public class JavetReflectionProxyObjectHandler<T, E extends Exception>
         result = result == null ? getFromMethod(target, property) : result;
         result = result == null ? getFromSymbol(property) : result;
         result = result == null ? getFromGetter(property) : result;
+        result = result == null ? getFromPolyfill(property) : result;
         return result == null ? v8Runtime.createV8ValueUndefined() : result;
     }
 
@@ -181,6 +182,7 @@ public class JavetReflectionProxyObjectHandler<T, E extends Exception>
      * @param property the property
      * @return true : has, false: not has
      * @throws JavetException the javet exception
+     * @since 1.1.7
      */
     protected boolean hasFromCollection(V8Value property) throws JavetException {
         if (classDescriptor.isTargetTypeMap()) {
@@ -311,6 +313,7 @@ public class JavetReflectionProxyObjectHandler<T, E extends Exception>
      * @param propertyValue the property value
      * @return true : set, false: not set
      * @throws JavetException the javet exception
+     * @since 1.1.7
      */
     protected boolean setToCollection(V8Value propertyKey, V8Value propertyValue) throws JavetException {
         if (propertyKey instanceof V8ValueString) {
