@@ -17,12 +17,12 @@ jobs:
     strategy:
       matrix:
         include:
-          - android_arch: arm
-            android_abi: armeabi-v7a
+          # - android_arch: arm
+          #   android_abi: armeabi-v7a
           - android_arch: arm64
             android_abi: arm64-v8a
-          - android_arch: x86
-            android_abi: x86
+          # - android_arch: x86
+          #   android_abi: x86
           - android_arch: x86_64
             android_abi: x86_64
 
@@ -132,16 +132,19 @@ jobs:
 
     - name: Prepare JNI Libs
       run: |
-        mkdir -p android/javet-android/src/main/jniLibs/armeabi-v7a
         mkdir -p android/javet-android/src/main/jniLibs/arm64-v8a
-        mkdir -p android/javet-android/src/main/jniLibs/x86
         mkdir -p android/javet-android/src/main/jniLibs/x86_64
+      # run: |
+      #   mkdir -p android/javet-android/src/main/jniLibs/armeabi-v7a
+      #   mkdir -p android/javet-android/src/main/jniLibs/arm64-v8a
+      #   mkdir -p android/javet-android/src/main/jniLibs/x86
+      #   mkdir -p android/javet-android/src/main/jniLibs/x86_64
 
-    - name: Download Javet arm
-      uses: actions/download-artifact@v4
-      with:
-        name: javet-android-node-arm-${{ env.JAVET_VERSION }}
-        path: android/javet-android/src/main/jniLibs/armeabi-v7a
+    # - name: Download Javet arm
+    #   uses: actions/download-artifact@v4
+    #   with:
+    #     name: javet-android-node-arm-${{ env.JAVET_VERSION }}
+    #     path: android/javet-android/src/main/jniLibs/armeabi-v7a
 
     - name: Download Javet arm64
       uses: actions/download-artifact@v4
@@ -149,11 +152,11 @@ jobs:
         name: javet-android-node-arm64-${{ env.JAVET_VERSION }}
         path: android/javet-android/src/main/jniLibs/arm64-v8a
 
-    - name: Download Javet x86
-      uses: actions/download-artifact@v4
-      with:
-        name: javet-android-node-x86-${{ env.JAVET_VERSION }}
-        path: android/javet-android/src/main/jniLibs/x86
+    # - name: Download Javet x86
+    #   uses: actions/download-artifact@v4
+    #   with:
+    #     name: javet-android-node-x86-${{ env.JAVET_VERSION }}
+    #     path: android/javet-android/src/main/jniLibs/x86
 
     - name: Download Javet x86_64
       uses: actions/download-artifact@v4
@@ -174,20 +177,20 @@ jobs:
         name: javet-android-node-${{ env.JAVET_VERSION }}
         path: android/javet-android/build/outputs/aar/javet*release.aar
 
-    - name: Delete Javet arm
-      uses: geekyeggo/delete-artifact@v4
-      with:
-        name: javet-android-node-arm-${{ env.JAVET_VERSION }}
+    # - name: Delete Javet arm
+    #   uses: geekyeggo/delete-artifact@v4
+    #   with:
+    #     name: javet-android-node-arm-${{ env.JAVET_VERSION }}
 
     - name: Delete Javet arm64
       uses: geekyeggo/delete-artifact@v4
       with:
         name: javet-android-node-arm64-${{ env.JAVET_VERSION }}
 
-    - name: Delete Javet x86
-      uses: geekyeggo/delete-artifact@v4
-      with:
-        name: javet-android-node-x86-${{ env.JAVET_VERSION }}
+    # - name: Delete Javet x86
+    #   uses: geekyeggo/delete-artifact@v4
+    #   with:
+    #     name: javet-android-node-x86-${{ env.JAVET_VERSION }}
 
     - name: Delete Javet x86_64
       uses: geekyeggo/delete-artifact@v4
