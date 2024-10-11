@@ -93,6 +93,17 @@ jobs:
         name: javet-android-node-${{ matrix.android_arch }}-${{ env.JAVET_VERSION }}
         path: android/javet-android/src/main/jniLibs/${{ matrix.android_abi }}/*.so
 
+    - name: Copy the i18n
+      run: |
+        mkdir -p icu-node/${{ matrix.android_abi }}
+        cp ../node/deps/icu-tmp/*.dat icu-node/${{ matrix.android_abi }}
+    
+    - name: Upload the i18n
+      uses: actions/upload-artifact@v4
+      with:
+        name: icu-node-${{ matrix.android_abi }}-${{ env.JAVET_VERSION }}
+        path: icu-node/${{ matrix.android_abi }}/*.dat
+
   build_javet_aar:
     needs: [build_javet_lib]
     name: Build Javet AAR
