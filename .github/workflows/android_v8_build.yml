@@ -108,7 +108,7 @@ jobs:
     - name: Copy the i18n
       run: |
         mkdir -p icu-v8/${{ matrix.android_abi }}
-        cp ../google/v8/third_party/icu/common/*.dat icu-v8/${{ matrix.android_abi }}
+        cp ../google/v8/third_party/icu/common/*.dat icu-v8/${{ matrix.android_abi }}/
 
     - name: Upload the i18n
       uses: actions/upload-artifact@v4

@@ -96,7 +96,7 @@ jobs:
     - name: Copy the i18n
       run: |
         mkdir -p icu-node/${{ matrix.android_abi }}
-        cp ../node/deps/icu-tmp/*.dat icu-node/${{ matrix.android_abi }}
+        cp ../node/deps/icu-tmp/*.dat icu-node/${{ matrix.android_abi }}/
     
     - name: Upload the i18n
       uses: actions/upload-artifact@v4
