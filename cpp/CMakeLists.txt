@@ -126,6 +126,7 @@ if(DEFINED NODE_DIR)
         ${NODE_DIR}/deps/v8/include
         ${NODE_DIR}/deps/v8/third_party/abseil-cpp
         ${NODE_DIR}/deps/ncrypto
+        ${NODE_DIR}/deps/inspector_protocol/crdtp
         ${NODE_DIR}/src)
     if(DEFINED ENABLE_I18N)
         add_definitions(-DENABLE_I18N -DV8_INTL_SUPPORT -DNODE_HAVE_I18N_SUPPORT)
@@ -133,7 +134,7 @@ if(DEFINED NODE_DIR)
             ${NODE_DIR}/deps/icu-small/source/common)
     endif()
     list(APPEND importLibraries
-        ada brotli cares histogram inspector_protocol llhttp nbytes ncrypto nghttp2 nghttp3 ngtcp2 openssl simdjson simdutf sqlite torque_base uvwasi
+        ada brotli cares crdtp histogram inspector_protocol llhttp nbytes ncrypto nghttp2 nghttp3 ngtcp2 openssl simdjson simdutf sqlite torque_base uvwasi
         v8_abseil v8_base_without_compiler v8_compiler v8_init v8_initializers v8_initializers_slow
         v8_libbase v8_libplatform v8_snapshot v8_turboshaft v8_zlib zlib)
     # node, uv
