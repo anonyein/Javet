@@ -568,8 +568,8 @@ JNIEXPORT jboolean JNICALL Java_com_caoccao_javet_interop_V8Native_functionSetSo
                         V8InternalAllowNullsFlag::DISALLOW_NULLS, V8InternalRobustnessFlag::ROBUST_STRING_TRAVERSAL,
                         0, startPosition, &utf8Length));
 #else
-                    uint32_t utf8Length = 0;
-                    auto stdStringHeader(v8InternalSource->ToCString(0, startPosition, reinterpret_cast<size_t*>(&utf8Length)));
+                    size_t utf8Length = 0;
+                    auto stdStringHeader(v8InternalSource->ToCString(0, startPosition, &utf8Length));
 #endif
                     auto v8MaybeLocalStringHeader = v8::String::NewFromUtf8(
                         v8Context->GetIsolate(), stdStringHeader.get(), v8::NewStringType::kNormal, utf8Length);
@@ -593,8 +593,8 @@ JNIEXPORT jboolean JNICALL Java_com_caoccao_javet_interop_V8Native_functionSetSo
                         V8InternalAllowNullsFlag::DISALLOW_NULLS, V8InternalRobustnessFlag::ROBUST_STRING_TRAVERSAL,
                         endPosition, sourceLength - endPosition, &utf8Length));
 #else
-                    uint32_t utf8Length = 0;
-                    auto stdStringFooter(v8InternalSource->ToCString(endPosition, sourceLength - endPosition, reinterpret_cast<size_t*>(&utf8Length)));
+                    size_t utf8Length = 0;
+                    auto stdStringFooter(v8InternalSource->ToCString(endPosition, sourceLength - endPosition, &utf8Length));
 #endif
                     auto v8MaybeLocalStringFooter = v8::String::NewFromUtf8(
                         v8Context->GetIsolate(), stdStringFooter.get(), v8::NewStringType::kNormal, utf8Length);
