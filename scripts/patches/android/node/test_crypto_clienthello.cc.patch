@@ -1,5 +1,3 @@
-diff --git a/test/cctest/test_crypto_clienthello.cc b/test/cctest/test_crypto_clienthello.cc
-index 870857cf90..1a5f7aaf15 100644
 --- a/test/cctest/test_crypto_clienthello.cc
 +++ b/test/cctest/test_crypto_clienthello.cc
 @@ -43,91 +43,7 @@ size_t GetPageSize() {
