@@ -20,7 +20,7 @@ index 146e3f28541..505c6e5a8b6 100644
  
    return simd_result;
  }
-@@ -835,18 +828,11 @@ BUILTIN(Uint8ArrayPrototypeToBase64) {
+@@ -835,15 +828,9 @@ BUILTIN(Uint8ArrayPrototypeToBase64) {
      // 11. Return CodePointsToString(outAscii).
  
      size_t simd_result_size;
@@ -36,6 +36,3 @@ index 146e3f28541..505c6e5a8b6 100644
      DCHECK_EQ(simd_result_size, output_length);
      USE(simd_result_size);
    }
- 
-   // output_length is the correct length of the output, with padding or
-   // without padding, so we do not need to modify the output based on
