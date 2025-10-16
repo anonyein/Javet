@@ -84,7 +84,7 @@ if(DEFINED ENABLE_LOGGING)
 endif()
 
 # Preparation
-set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD 17)
 if(DEFINED ENABLE_I18N)
     set(JAVET_LIB_I18N "-i18n")
     set(OUT_DIR_SUFFIX "i18n")
