@@ -30,7 +30,7 @@
 #define FETCH_JNI_ENV(javaVMPointer) \
     JNIEnv* jniEnv; \
     javaVMPointer->GetEnv((void**)&jniEnv, SUPPORTED_JNI_VERSION); \
-    javaVMPointer->AttachCurrentThread((void**)&jniEnv, nullptr);
+    javaVMPointer->AttachCurrentThread(&jniEnv, nullptr);
 
 #define DELETE_LOCAL_REF(jniEnv, localRef) if (localRef != nullptr) { jniEnv->DeleteLocalRef(localRef); }
 

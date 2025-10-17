@@ -142,7 +142,7 @@ if(DEFINED NODE_DIR)
     list(APPEND importLibraries
         abseil ada brotli cares crdtp highway histogram llhttp nbytes ncrypto nghttp2 openssl simdjson simdutf sqlite torque_base uvwasi
         v8_base_without_compiler v8_compiler v8_init v8_initializers v8_initializers_slow
-        v8_libbase v8_libplatform v8_snapshot v8_zlib zlib zstd)
+        v8_libbase v8_libplatform v8_snapshot v8_zlib zlib zstd nghttp3 ngtcp2)
     # node, uv
     if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
         list(APPEND importLibraries libnode libuv)
