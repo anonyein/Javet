@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
 
 env:
-  JAVET_NODE_VERSION: 24.11.0
+  JAVET_NODE_VERSION: 24.11.1
   JAVET_VERSION: 5.0.2
   ROOT: /home/runner/work/Javet
 
@@ -59,7 +59,7 @@ jobs:
       id: setup-ndk
       uses: nttld/setup-ndk@v1
       with:
-        ndk-version: r27d
+        ndk-version: r29
         local-cache: false
 
     - name: Setup Path
