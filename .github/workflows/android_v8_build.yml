@@ -77,7 +77,14 @@ jobs:
 
     - name: Setup Ubuntu
       run: |
-        sudo apt-get install -y execstack gcc-multilib
+        # sudo apt-get install -y execstack gcc-multilib
+        sudo dpkg --add-architecture i386
+        
+        sudo sed -i 's|azure.archive.ubuntu.com|archive.ubuntu.com|g' /etc/apt/sources.list
+        sudo sed -i 's|security.ubuntu.com|archive.ubuntu.com|g' /etc/apt/sources.list
+    
+        sudo apt update
+        sudo apt install -y execstack gcc-multilib g++-multilib --fix-missing
 
     - name: Setup Python
       uses: actions/setup-python@v5
