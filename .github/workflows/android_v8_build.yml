@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
 
 env:
-  JAVET_V8_VERSION: 14.5.201.5
+  JAVET_V8_VERSION: 14.5.201.12
   JAVET_VERSION: 5.0.5
   TEMPORAL_VERSION: 0.1.2
   ROOT: /home/runner/work/Javet
@@ -77,7 +77,14 @@ jobs:
 
     - name: Setup Ubuntu
       run: |
-        sudo apt-get install -y execstack gcc-multilib
+        # sudo apt-get install -y execstack gcc-multilib
+        sudo dpkg --add-architecture i386
+        
+        sudo sed -i 's|azure.archive.ubuntu.com|archive.ubuntu.com|g' /etc/apt/sources.list
+        sudo sed -i 's|security.ubuntu.com|archive.ubuntu.com|g' /etc/apt/sources.list
+    
+        sudo apt update
+        sudo apt install -y execstack gcc-multilib g++-multilib --fix-missing
 
     - name: Setup Python
       uses: actions/setup-python@v5
