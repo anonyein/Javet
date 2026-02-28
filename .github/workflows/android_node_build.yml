@@ -5,6 +5,10 @@ concurrency:
   cancel-in-progress: true
 
 on:
+  push:
+    branches: [ dev/5.0.5 ]
+  pull_request:
+    branches: [ dev/5.0.5 ]
   workflow_dispatch:
 
 env:
