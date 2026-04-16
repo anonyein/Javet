@@ -105,11 +105,14 @@ jobs:
       uses: denoland/setup-deno@v2
       with:
         deno-version: v2.x
-
+        
     - name: Build Javet JNI
       run: |
         cd ${{ env.ROOT }}/Javet/cpp
-        CXXFLAGS="${CXXFLAGS} -UMAP_TYPE" deno run build --os android --arch ${{ matrix.android_arch }} --node-dir ${{ env.ROOT }}/node --android-ndk ${{ steps.setup-ndk.outputs.ndk-path }} ${{ matrix.i18n_flag }}
+        sed -i '/project(Javet)/a if(ANDROID)' CMakeLists.txt
+        sed -i '/if(ANDROID)/a \    add_definitions(-UMAP_TYPE)' CMakeLists.txt
+        sed -i '/    add_definitions(-UMAP_TYPE)/a endif()' CMakeLists.txt
+        deno run build --os android --arch ${{ matrix.android_arch }} --node-dir ${{ env.ROOT }}/node --android-ndk ${{ steps.setup-ndk.outputs.ndk-path }} ${{ matrix.i18n_flag }}
 
     - name: Upload the Artifact
       uses: actions/upload-artifact@v4
