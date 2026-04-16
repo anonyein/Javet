@@ -109,7 +109,7 @@ jobs:
     - name: Build Javet JNI
       run: |
         cd ${{ env.ROOT }}/Javet/cpp
-        deno run build --os android --arch ${{ matrix.android_arch }} --node-dir ${{ env.ROOT }}/node --android-ndk ${{ steps.setup-ndk.outputs.ndk-path }} ${{ matrix.i18n_flag }}
+        CXXFLAGS="${CXXFLAGS} -UMAP_TYPE" deno run build --os android --arch ${{ matrix.android_arch }} --node-dir ${{ env.ROOT }}/node --android-ndk ${{ steps.setup-ndk.outputs.ndk-path }} ${{ matrix.i18n_flag }}
 
     - name: Upload the Artifact
       uses: actions/upload-artifact@v4
