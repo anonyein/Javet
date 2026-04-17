@@ -59,7 +59,7 @@ jobs:
       id: setup-ndk
       uses: nttld/setup-ndk@v1
       with:
-        ndk-version: r27d
+        ndk-version: r29
         local-cache: false
 
     - name: Setup Path
@@ -109,9 +109,6 @@ jobs:
     - name: Build Javet JNI
       run: |
         cd ${{ env.ROOT }}/Javet/cpp
-        sed -i '/project(Javet)/a if(ANDROID)' CMakeLists.txt
-        sed -i '/if(ANDROID)/a \    add_definitions(-UMAP_TYPE)' CMakeLists.txt
-        sed -i '/    add_definitions(-UMAP_TYPE)/a endif()' CMakeLists.txt
         deno run build --os android --arch ${{ matrix.android_arch }} --node-dir ${{ env.ROOT }}/node --android-ndk ${{ steps.setup-ndk.outputs.ndk-path }} ${{ matrix.i18n_flag }}
 
     - name: Upload the Artifact
