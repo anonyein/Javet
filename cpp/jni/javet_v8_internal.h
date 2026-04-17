@@ -22,6 +22,9 @@
   * It shall only be included in .cpp files and only be the last header,
   * otherwise compilation errors will take place.
   */
+#if defined(__ANDROID__) && defined(MAP_TYPE)
+#undef MAP_TYPE
+#endif
 
 #pragma warning(disable: 4065)
 #pragma warning(disable: 4018)
