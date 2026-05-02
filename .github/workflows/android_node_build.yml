@@ -108,7 +108,8 @@ jobs:
 
     - name: Patch javet_v8_internal.h for Android MAP_TYPE conflict
       run: |
-        sed -i '/^#pragma once$/a #if defined(__ANDROID__) \&\& defined(MAP_TYPE)\n#undef MAP_TYPE\n#endif' ${{ env.ROOT }}/Javet/cpp/jni/javet_v8_internal.h
+        sed -i '/^#pragma once$/a #if defined(__ANDROID__) && defined(MAP_TYPE)\n#undef MAP_TYPE\n#endif' \
+          ${{ env.ROOT }}/Javet/cpp/jni/javet_v8_internal.h
       shell: bash
 
     - name: Build Javet JNI
