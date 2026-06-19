@@ -71,7 +71,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # ---------- 优化1：释放磁盘空间（删除预装无用软件） ----------
+      # ---------- 释放磁盘空间 ----------
       - name: Free disk space
         uses: jlumbroso/free-disk-space@main
         with:
@@ -117,7 +117,7 @@ jobs:
         run: |
           echo "${{ env.ROOT }}/google/depot_tools" >> $GITHUB_PATH
 
-      # ---------- 优化2：浅拉取 V8 + 拉取标签以确保 checkout 可用 ----------
+      # ---------- 构建 V8：浅克隆 + 只抓一个标签 ----------
       - name: Build V8
         run: |
           cd ${{ env.ROOT }}
@@ -127,22 +127,22 @@ jobs:
           cd depot_tools
           git checkout remotes/origin/main
           cd ..
-          # 浅克隆 V8，不拉取全部历史，节省空间
+          # 浅克隆 V8（无历史，磁盘占用小）
           fetch --no-history v8
           cd v8
-          # 拉取标签，避免 checkout 标签时失败
-          git fetch --tags
-          git checkout ${{ env.JAVET_V8_VERSION }}
+          # 只拉取我们需要的这一个标签，深度 1，速度快体积小
+          git fetch origin refs/tags/${{ env.JAVET_V8_VERSION }} --depth=1
+          # 切换到这个标签对应的提交
+          git checkout FETCH_HEAD
           ./build/install-build-deps.sh
           cd ..
           echo 'target_os = ["android"]' >> .gclient
-          # gclient sync 也加 --no-history 减少依赖仓库体积
           gclient sync -D --no-history
           cd v8
-          # 替换 NDK，因为 V8 自带的 NDK 可能不完整
+          # 替换 NDK
           mv third_party/android_toolchain/ndk third_party/android_toolchain/ndk.bak
           ln -s ${{ steps.setup-ndk.outputs.ndk-path }} third_party/android_toolchain/ndk
-          # 补丁修复
+          # 补丁
           sed -i 's/max\.value_or({})/max.value_or(uint8_t{})/' src/compiler/turboshaft/wasm-shuffle-reducer.cc
           sed -i 's/__attribute__((tls_model(V8_TLS_MODEL)))/ /g' src/execution/isolate.h
           sed -i 's/__attribute__((tls_model(V8_TLS_MODEL)))/ /g' src/heap/local-heap.h
@@ -202,7 +202,6 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # AAR 构建也清理一下空间（预防万一）
       - name: Free disk space
         uses: jlumbroso/free-disk-space@main
         with:
