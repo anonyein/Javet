@@ -127,22 +127,17 @@ jobs:
           cd depot_tools
           git checkout remotes/origin/main
           cd ..
-          # 浅克隆 V8（无历史，磁盘占用小）
           fetch --no-history v8
           cd v8
-          # 只拉取我们需要的这一个标签，深度 1，速度快体积小
           git fetch origin refs/tags/${{ env.JAVET_V8_VERSION }} --depth=1
-          # 切换到这个标签对应的提交
           git checkout FETCH_HEAD
           ./build/install-build-deps.sh
           cd ..
           echo 'target_os = ["android"]' >> .gclient
           gclient sync -D --no-history
           cd v8
-          # 替换 NDK
           mv third_party/android_toolchain/ndk third_party/android_toolchain/ndk.bak
           ln -s ${{ steps.setup-ndk.outputs.ndk-path }} third_party/android_toolchain/ndk
-          # 补丁
           sed -i 's/max\.value_or({})/max.value_or(uint8_t{})/' src/compiler/turboshaft/wasm-shuffle-reducer.cc
           sed -i 's/__attribute__((tls_model(V8_TLS_MODEL)))/ /g' src/execution/isolate.h
           sed -i 's/__attribute__((tls_model(V8_TLS_MODEL)))/ /g' src/heap/local-heap.h
@@ -202,10 +197,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # ---------- 修正：保留 Android SDK ----------
       - name: Free disk space
         uses: jlumbroso/free-disk-space@main
         with:
-          android: true
+          android: false          # 不删除 Android SDK
           dotnet: true
           haskell: true
           docker-images: true
