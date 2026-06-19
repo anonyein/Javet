@@ -72,6 +72,26 @@ jobs:
 
     steps:
 
+    # ---------- 优化1：释放磁盘空间（删除预装的无用软件） ----------
+    - name: Free disk space
+      uses: jlumbroso/free-disk-space@main
+      with:
+        android: true
+        dotnet: true
+        haskell: true
+        docker-images: true
+        large-packages: true
+
+    # 如果需要更精细的控制，也可以使用下面的手动清理脚本（二选一）：
+    # - name: Free disk space (manual)
+    #   run: |
+    #     echo "Before cleanup:"
+    #     df -h /
+    #     sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc /usr/local/share/boost /usr/local/.ghcup
+    #     sudo docker system prune -af || true
+    #     echo "After cleanup:"
+    #     df -h /
+
     - name: Checkout the code
       uses: actions/checkout@v4
 
@@ -108,6 +128,7 @@ jobs:
       run: |
         echo "${{ env.ROOT }}/google/depot_tools" >> $GITHUB_PATH
 
+    # ---------- 优化2：使用 --no-history 浅拉取 V8 ----------
     - name: Build V8
       run: |
         cd ${{ env.ROOT }}
@@ -117,13 +138,15 @@ jobs:
         cd depot_tools
         git checkout remotes/origin/main
         cd ..
-        fetch v8
+        # 加入 --no-history，避免拉取全部历史记录（通常能节省数 GB）
+        fetch --no-history v8
         cd v8
         git checkout ${{ env.JAVET_V8_VERSION }}
         ./build/install-build-deps.sh
         cd ..
         echo 'target_os = ["android"]' >> .gclient
-        gclient sync -D
+        # gclient sync 也加上 --no-history，减少依赖仓库的体积
+        gclient sync -D --no-history
         cd v8
         # Replace the NDK because the NDK from V8 is broken.
         mv third_party/android_toolchain/ndk third_party/android_toolchain/ndk.bak
@@ -187,6 +210,16 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+
+    # 可选：AAR 构建也清理一下空间（预防万一）
+    - name: Free disk space
+      uses: jlumbroso/free-disk-space@main
+      with:
+        android: true
+        dotnet: true
+        haskell: true
+        docker-images: true
+        large-packages: true
 
     - name: Checkout the code
       uses: actions/checkout@v4
