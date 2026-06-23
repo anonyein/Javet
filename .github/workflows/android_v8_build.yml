@@ -162,16 +162,16 @@ jobs:
           mkdir icu-v8
           cp ../google/v8/third_party/icu/android/*.dat icu-v8
 
-    - name: Setup JDK 11
+      - name: Setup JDK 11
         uses: actions/setup-java@v5
-      with:
-        distribution: corretto
-        java-version: 11
-
-    - name: Setup Cmake
+        with:
+          distribution: corretto
+          java-version: 11
+  
+      - name: Setup Cmake
         uses: jwlawson/actions-setup-cmake@v2.2
-      with:
-        cmake-version: '3.23.x'
+        with:
+          cmake-version: '3.23.x'
 
       - name: Build Javet JNI
         run: |
