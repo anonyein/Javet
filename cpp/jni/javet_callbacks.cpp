@@ -15,6 +15,9 @@
  *   limitations under the License.
  */
 
+#include <cstdint>
+#include <limits>
+
 #include "javet_callbacks.h"
 #include "javet_converter.h"
 #include "javet_exceptions.h"
@@ -214,7 +217,7 @@ namespace Javet {
                     jobject mReferrerV8Module = referrer.IsEmpty()
                         ? nullptr
                         : Javet::Converter::ToExternalV8Module(jniEnv, v8Runtime, referrer);
-                    jstring mSpecifier = Javet::Converter::ToJavaString(
+                    jstring mSpecifier = Javet::Converter::ToJavaStringFromV8String(
                         jniEnv, v8Runtime->v8Isolate, specifier);
                     jobject mIV8Module = jniEnv->CallObjectMethod(
                         v8Runtime->externalV8Runtime,
@@ -222,7 +225,7 @@ namespace Javet {
                         mSpecifier,
                         mReferrerV8Module);
                     DELETE_LOCAL_REF(jniEnv, mSpecifier);
-                    auto moduleNamePointer = Javet::Converter::ToStdString(v8Runtime->v8Isolate, specifier);
+                    auto moduleNamePointer = Javet::Converter::ToUtf8String(v8Runtime->v8Isolate, specifier);
                     if (jniEnv->ExceptionCheck()) {
                         // JNI exception is not re-thrown in this callback function because it will pop up automatically.
                         LOG_ERROR("JavetModuleResolveCallback: module '" << moduleNamePointer.get() << "' with exception");
@@ -289,7 +292,22 @@ namespace Javet {
                 LOG_ERROR("JavetNearHeapLimitCallback: Exception occurred in Java callback.");
                 return currentHeapLimit;
             }
-            return (size_t)newHeapLimit;
+            if (newHeapLimit < 0) {
+                LOG_ERROR("JavetNearHeapLimitCallback: Invalid negative heap limit " << newHeapLimit << ".");
+                return currentHeapLimit;
+            }
+            if (static_cast<std::uintmax_t>(newHeapLimit) >
+                static_cast<std::uintmax_t>(std::numeric_limits<size_t>::max())) {
+                LOG_ERROR("JavetNearHeapLimitCallback: Heap limit " << newHeapLimit << " exceeds the native size limit.");
+                return currentHeapLimit;
+            }
+            const auto validatedHeapLimit = static_cast<size_t>(newHeapLimit);
+            if (validatedHeapLimit < currentHeapLimit) {
+                LOG_ERROR("JavetNearHeapLimitCallback: Heap limit " << validatedHeapLimit
+                    << " is below the current heap limit " << currentHeapLimit << ".");
+                return currentHeapLimit;
+            }
+            return validatedHeapLimit;
         }
 
         void JavetPromiseRejectCallback(v8::PromiseRejectMessage message) noexcept {

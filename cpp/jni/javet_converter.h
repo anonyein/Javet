@@ -18,7 +18,10 @@
 
 #pragma once
 
+#include <cstddef>
 #include <jni.h>
+#include <memory>
+#include <string>
 #include "javet_constants.h"
 #include "javet_monitor.h"
 #include "javet_native.h"
@@ -86,19 +89,38 @@ namespace Javet {
             JNIEnv* jniEnv,
             const V8ScriptCompilerCachedData* cachedDataPointer) noexcept;
 
-        static inline jstring ToJavaString(
-            JNIEnv* jniEnv,
-            const char* utfString) noexcept {
-            return jniEnv->NewStringUTF(utfString);
+        static inline bool ToJavaBoolean(
+            const V8LocalValue& v8LocalValue,
+            jboolean& booleanValue) noexcept {
+            if (v8LocalValue->IsBoolean()) {
+                booleanValue = v8LocalValue.As<v8::Boolean>()->Value();
+                return true;
+            }
+            if (v8LocalValue->IsBooleanObject()) {
+                booleanValue = v8LocalValue.As<v8::BooleanObject>()->ValueOf();
+                return true;
+            }
+            return false;
         }
 
-        static inline jstring ToJavaString(
+        jstring ToJavaStringFromUtf8(
             JNIEnv* jniEnv,
-            const std::string& stdString) noexcept {
-            return jniEnv->NewStringUTF(stdString.c_str());
-        }
+            const char* utf8String) noexcept;
 
-        static inline jstring ToJavaString(
+        jstring ToJavaStringFromUtf8(
+            JNIEnv* jniEnv,
+            const char* utf8String,
+            size_t length) noexcept;
+
+        jstring ToJavaStringFromUtf8(
+            JNIEnv* jniEnv,
+            const std::string& utf8String) noexcept;
+
+        jstring ToJavaStringFromUtf16(
+            JNIEnv* jniEnv,
+            const std::u16string& utf16String) noexcept;
+
+        static inline jstring ToJavaStringFromV8String(
             JNIEnv* jniEnv,
             V8Isolate* v8Isolate,
             const V8LocalString& v8LocalString) noexcept {
@@ -106,27 +128,26 @@ namespace Javet {
             return jniEnv->NewString(*v8StringValue, v8StringValue.length());
         }
 
-        static inline jstring ToJavaString(
+        static inline jstring ToJavaStringFromV8String(
             JNIEnv* jniEnv,
             V8Isolate* v8Isolate,
             const V8LocalValue& v8LocalValue) noexcept {
-            V8StringUtf8Value v8StringUtf8Value(v8Isolate, v8LocalValue);
-            return jniEnv->NewStringUTF(*v8StringUtf8Value);
+            V8StringValue v8StringValue(v8Isolate, v8LocalValue);
+            return jniEnv->NewString(*v8StringValue, v8StringValue.length());
         }
 
-        static inline std::unique_ptr<std::string> ToStdString(
+        std::unique_ptr<std::string> ToUtf8String(
             JNIEnv* jniEnv,
-            const jstring& mString) noexcept {
-            JNIStringUTFChars utfChars(jniEnv, mString);
-            if (!utfChars) {
-                return nullptr;
-            }
-            return std::make_unique<std::string>(
-                utfChars.Get(),
-                jniEnv->GetStringUTFLength(mString));
-        }
+            const jstring& mString) noexcept;
 
-        static inline std::unique_ptr<std::string> ToStdString(
+        std::unique_ptr<std::string> ToUtf8String(
+            const std::u16string& utf16String) noexcept;
+
+        std::unique_ptr<std::u16string> ToUtf16String(
+            JNIEnv* jniEnv,
+            const jstring& mString) noexcept;
+
+        static inline std::unique_ptr<std::string> ToUtf8String(
             V8Isolate* v8Isolate,
             const V8LocalString& v8LocalString) noexcept {
             V8StringUtf8Value v8StringUtf8Value(v8Isolate, v8LocalString);
@@ -197,7 +218,10 @@ namespace Javet {
             const V8Runtime* v8Runtime,
             const V8LocalContext& v8Context,
             const V8LocalValue& v8Value) noexcept {
-            jstring mStringValue = ToJavaString(jniEnv, v8Runtime->v8Isolate, v8Value->ToString(v8Context).ToLocalChecked());
+            jstring mStringValue = ToJavaStringFromV8String(
+                jniEnv,
+                v8Runtime->v8Isolate,
+                v8Value->ToString(v8Context).ToLocalChecked());
             jobject mV8ValuePrimitive = jniEnv->NewObject(
                 jclassV8ValuePrimitive,
                 jmethodIDV8ValuePrimitiveConstructor,

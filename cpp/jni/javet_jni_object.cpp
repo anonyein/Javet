@@ -258,8 +258,9 @@ JNIEXPORT jboolean JNICALL Java_com_caoccao_javet_interop_V8Native_objectGetBool
         key,
         mPrimitiveFlags,
         [](JNIEnv* jniEnv, Javet::V8Runtime* v8Runtime, const V8LocalContext& v8Context, const V8LocalValue& v8LocalValue, jbooleanArray mPrimitiveFlags) -> jboolean {
-            if (v8LocalValue->IsBoolean() || v8LocalValue->IsBooleanObject()) {
-                return v8LocalValue->IsTrue();
+            jboolean booleanValue = false;
+            if (Javet::Converter::ToJavaBoolean(v8LocalValue, booleanValue)) {
+                return booleanValue;
             }
             jniEnv->SetBooleanArrayRegion(mPrimitiveFlags, 0, 1, Javet::V8ValueObject::defaultPrimitiveFlags);
             return false;
@@ -508,7 +509,8 @@ JNIEXPORT jstring JNICALL Java_com_caoccao_javet_interop_V8Native_objectGetStrin
         nullptr,
         [](JNIEnv* jniEnv, Javet::V8Runtime* v8Runtime, const V8LocalContext& v8Context, const V8LocalValue& v8LocalValue, jbooleanArray mPrimitiveFlags) -> jstring {
             if (v8LocalValue->IsString()) {
-                return Javet::Converter::ToJavaString(jniEnv, v8Runtime->v8Isolate, v8LocalValue);
+                return Javet::Converter::ToJavaStringFromV8String(
+                    jniEnv, v8Runtime->v8Isolate, v8LocalValue);
             }
             return nullptr;
         },
@@ -571,10 +573,23 @@ JNIEXPORT jboolean JNICALL Java_com_caoccao_javet_interop_V8Native_objectHasOwnP
             jint integerKey = Javet::Converter::ToJavaIntegerFromV8ValueInteger(jniEnv, key);
             v8MaybeBool = v8LocalObject->HasOwnProperty(v8Context, integerKey);
         }
-        else if (Javet::Converter::IsV8ValueString(jniEnv, key)) {
-            jstring stringKey = Javet::Converter::ToJavaStringFromV8ValueString(jniEnv, key);
-            auto v8ValueKey = Javet::Converter::ToV8String(jniEnv, v8Isolate, stringKey);
-            v8MaybeBool = v8LocalObject->HasOwnProperty(v8Context, v8ValueKey);
+        else if (
+            Javet::Converter::IsV8ValueString(jniEnv, key) ||
+            Javet::Converter::IsV8ValueSymbol(jniEnv, key)) {
+            auto v8LocalValueKey = Javet::Converter::ToV8Value(jniEnv, v8Isolate, v8Context, key);
+            if (v8LocalValueKey.IsEmpty()) {
+                if (!jniEnv->ExceptionCheck()) {
+                    Javet::Exceptions::ThrowJavetConverterException(jniEnv, "Failed to convert the property key.");
+                }
+                return false;
+            }
+            v8MaybeBool = v8LocalObject->HasOwnProperty(v8Context, v8LocalValueKey.As<v8::Name>());
+        }
+        else {
+            Javet::Exceptions::ThrowJavetConverterException(
+                jniEnv,
+                "Property key must be an integer, string, or symbol.");
+            return false;
         }
         if (v8MaybeBool.IsNothing()) {
             Javet::Exceptions::HandlePendingException(jniEnv, v8Runtime, v8Context);
@@ -933,5 +948,5 @@ JNIEXPORT jstring JNICALL Java_com_caoccao_javet_interop_V8Native_objectToProtoS
         }
     }
     V8LocalString v8LocalString = v8MaybeLocalString.IsEmpty() ? V8LocalString() : v8MaybeLocalString.ToLocalChecked();
-    return Javet::Converter::ToJavaString(jniEnv, v8Isolate, v8LocalString);
+    return Javet::Converter::ToJavaStringFromV8String(jniEnv, v8Isolate, v8LocalString);
 }

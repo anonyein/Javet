@@ -165,8 +165,9 @@ JNIEXPORT jboolean JNICALL Java_com_caoccao_javet_interop_V8Native_mapGetBoolean
         key,
         mPrimitiveFlags,
         [](JNIEnv* jniEnv, Javet::V8Runtime* v8Runtime, const V8LocalContext& v8Context, const V8LocalValue& v8LocalValue, jbooleanArray mPrimitiveFlags) -> jboolean {
-            if (v8LocalValue->IsBoolean() || v8LocalValue->IsBooleanObject()) {
-                return v8LocalValue->IsTrue();
+            jboolean booleanValue = false;
+            if (Javet::Converter::ToJavaBoolean(v8LocalValue, booleanValue)) {
+                return booleanValue;
             }
             jniEnv->SetBooleanArrayRegion(mPrimitiveFlags, 0, 1, Javet::V8ValueMap::defaultPrimitiveFlags);
             return false;
@@ -274,7 +275,8 @@ JNIEXPORT jstring JNICALL Java_com_caoccao_javet_interop_V8Native_mapGetString
         nullptr,
         [](JNIEnv* jniEnv, Javet::V8Runtime* v8Runtime, const V8LocalContext& v8Context, const V8LocalValue& v8LocalValue, jbooleanArray mPrimitiveFlags) -> jstring {
             if (v8LocalValue->IsString()) {
-                return Javet::Converter::ToJavaString(jniEnv, v8Runtime->v8Isolate, v8LocalValue);
+                return Javet::Converter::ToJavaStringFromV8String(
+                    jniEnv, v8Runtime->v8Isolate, v8LocalValue);
             }
             return nullptr;
         },
