@@ -184,6 +184,7 @@ jobs:
       run: |
         cd ${{ env.ROOT }}/Javet/scripts/python
         python3 patch_android_build.py
+        python3 patch_await_deep.py
         cd ${{ env.ROOT }}/Javet/android
         gradle build --debug
 
