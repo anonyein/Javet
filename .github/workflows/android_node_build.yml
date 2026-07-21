@@ -107,6 +107,10 @@ jobs:
       with:
         deno-version: v2.x
 
+    - name: Apply await_deep patch (cpp + java)
+      working-directory: ${{ env.ROOT }}/Javet
+      run: python3 scripts/python/patch_await_deep.py
+
     - name: Build Javet JNI
       run: |
         cd ${{ env.ROOT }}/Javet/cpp
@@ -184,7 +188,6 @@ jobs:
       run: |
         cd ${{ env.ROOT }}/Javet/scripts/python
         python3 patch_android_build.py
-        python3 patch_await_deep.py
         cd ${{ env.ROOT }}/Javet/android
         gradle build --debug
 
