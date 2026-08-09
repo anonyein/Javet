@@ -5,6 +5,7 @@ concurrency:
   cancel-in-progress: true
 
 on:
+  push: 
   workflow_dispatch:
 
 env:
@@ -46,8 +47,13 @@ jobs:
     - name: Checkout the code
       uses: actions/checkout@v5
 
+    - name: Apply await_deep patch (cpp + java)
+      working-directory: ${{ env.ROOT }}/Javet
+      run: python3 scripts/python/patch_await_deep.py
+
     - name: Setup Ubuntu
       run: |
+        sudo apt-get update
         sudo apt-get install -y execstack gcc-multilib g++-multilib
 
     - name: Setup Python
