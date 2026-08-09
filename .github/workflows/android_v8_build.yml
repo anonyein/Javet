@@ -87,7 +87,8 @@ jobs:
 
       - name: Setup Ubuntu
         run: |
-          sudo apt-get install -y execstack gcc-multilib
+          sudo apt-get update
+          sudo apt-get install -y execstack gcc-multilib g++-multilib
 
       - name: Setup Python
         uses: actions/setup-python@v5
