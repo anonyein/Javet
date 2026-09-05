@@ -277,7 +277,7 @@ def patch_java_enum(repo_root: pathlib.Path, dry_run: bool) -> bool:
         '     * <p>\n'
         '     * It is a non-blocking call. It only works in Node.js mode.\n'
         '     *\n'
-        '     * @since 5.0.10\n'
+        '     * @since 6.0.0\n'
         '     */\n'
         '    RunTillNoMoreTasksDeep(3);'
     )
@@ -335,7 +335,7 @@ def patch_java_awaitdeep(repo_root: pathlib.Path, dry_run: bool) -> bool:
      * // PatchAwaitDeep/java-awaitdeep-applied
      *
      * @return true : there are more tasks, false : there are no more tasks
-     * @since 5.0.10
+     * @since 6.0.0
      */
     public boolean awaitDeep() {
         return await(V8AwaitMode.RunTillNoMoreTasksDeep);
