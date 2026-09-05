@@ -4,18 +4,26 @@
 
   Why this patch exists
   ---------------------
-  The default `V8Runtime.await()` (= `RunTillNoMoreTasks`) only pumps libuv
-  and a single `DrainTasks` pass. An inline `await` chain scheduled from a
-  `nodeEval(...)` script (e.g. `await WebAssembly.instantiate(...)`) often
-  has its Promise callbacks still pending on the NodePlatform worker thread
-  at the moment `uv_loop_alive()` reports false, causing `nodeEval(...)` to
-  return on the very first call with `null` and only succeed on the second
-  call.
+  The default `V8Runtime.await()` (= `RunTillNoMoreTasks`) does loop over
+  `uv_run(UV_RUN_ONCE)` + `DrainTasks()`, and it does emit `beforeExit`. What
+  it never does is flush the isolate's foreground task queue: its exit
+  condition rests on `uv_loop_alive()` alone, checked once before and once
+  after `beforeExit` within the same round.
 
-  `RunTillNoMoreTasksDeep` additionally pumps
-  `v8::Platform::FlushForegroundTasks(isolate)` every round and requires two
-  consecutive genuinely-empty rounds before returning. It is opt-in: the
-  default `await()` behaviour is untouched, so existing users are unaffected.
+  That is the gap. `WebAssembly.instantiate(...)` compiles on a V8 background
+  thread and posts its completion back as an isolate foreground task. Such a
+  task is not libuv work, so it does not keep `uv_loop_alive()` true. An
+  inline `await` chain scheduled from a `nodeEval(...)` script can therefore
+  find the libuv loop already quiet while the completion callback, and the
+  microtask continuations behind it, have not run yet -- `nodeEval(...)`
+  returns `null` on the first call and only the right value on the second.
+
+  `RunTillNoMoreTasksDeep` drains
+  `v8::Platform::FlushForegroundTasks(isolate)` to empty every round, and
+  requires two consecutive rounds in which nothing was dispatched and the
+  loop is not alive before it returns, bounded by a round cap. It is opt-in:
+  the default `await()` behaviour is untouched, so existing users are
+  unaffected.
 
   Idempotency
   -----------
@@ -163,12 +171,15 @@ def patch_cpp_await(repo_root: pathlib.Path, dry_run: bool) -> bool:
         return False
 
     deep_block = '''        // PatchAwaitDeep/await-applied BEGIN
-        // RunTillNoMoreTasksDeep: drain libuv AND v8 isolate foreground tasks
-        // (Promise microtasks, async resolve callbacks, WebAssembly.instantiate
-        // worker-thread completions) until two consecutive genuinely-empty rounds
-        // are observed. The default RunTillNoMoreTasks below only pumps libuv and
-        // a single DrainTasks pass, which can return before a Promise chain has
-        // settled, causing inline `await` scripts to return on the first call.
+        // RunTillNoMoreTasksDeep: drain libuv AND the v8 isolate foreground task
+        // queue (Promise microtasks, async resolve callbacks, the completion
+        // callback WebAssembly.instantiate posts back from a background thread)
+        // until two consecutive rounds neither dispatch a task nor leave the loop
+        // alive. The default RunTillNoMoreTasks below also loops on uv_run and
+        // DrainTasks, but it never flushes the foreground queue and returns as
+        // soon as one EmitProcessBeforeExit round sees uv_loop_alive() false,
+        // with no confirmation round - so an inline `await` chain whose remaining
+        // continuations sit in the foreground queue can be cut short.
         // FlushForegroundTasks is a MultiIsolatePlatform override on v8::Platform
         // and is thread-safe: it runs any pending foreground task for the isolate
         // and reports whether any actually dispatched.
@@ -270,10 +281,15 @@ def patch_java_enum(repo_root: pathlib.Path, dry_run: bool) -> bool:
         '     * resolve callbacks, WebAssembly.instantiate worker-thread completions, ...)\n'
         '     * until two consecutive rounds are observed to be empty. Use this mode when\n'
         '     * an inline {@code await} chain scheduled from script needs to fully settle\n'
-        '     * before {@code nodeEval()} returns - the default {@link #RunTillNoMoreTasks}\n'
-        '     * only pumps libuv and a single {@code DrainTasks} pass, which can return\n'
-        '     * before the Promise chain has drained (yielding the classic\n'
-        '     * "first {@code nodeEval()} result is null" race).\n'
+        '     * before {@code nodeEval()} returns.\n'
+        '     * <p>\n'
+        '     * The default {@link #RunTillNoMoreTasks} also loops, but its exit\n'
+        '     * condition rests on {@code uv_loop_alive()} alone, checked before and\n'
+        '     * after {@code process.beforeExit}. This mode additionally requires that\n'
+        '     * a foreground-task flush report nothing dispatched, twice in a row, so a\n'
+        '     * completion callback posted from a V8 background thread cannot still be\n'
+        '     * in flight when it returns. That is the classic "first {@code nodeEval()}\n'
+        '     * result is null, second one works" race.\n'
         '     * <p>\n'
         '     * It is a non-blocking call. It only works in Node.js mode.\n'
         '     *\n'
