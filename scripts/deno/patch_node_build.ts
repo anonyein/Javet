@@ -330,6 +330,47 @@ const ANDROID_CONFIGURE_PY_ARM_FPU: Patch = {
   ],
 };
 
+/*
+ * crates.gyp builds node_crates for both the host and the target toolset, but
+ * with cargo_rust_target set it passes --target <android triple> to both and
+ * points both linkers at the Android archive, so host tools like mksnapshot
+ * fail to link with `Relocations in generic ELF (EM: 184)`. Restrict the
+ * Android target selection to the target toolset and let the host toolset
+ * build for the build machine.
+ */
+const CRATES_GYP_HOST_TOOLSET: Patch = {
+  file: "deps/crates/crates.gyp",
+  reason: "Build node_crates for the host when cross-compiling to Android",
+  os: [OS.Android],
+  replacements: [
+    {
+      from: `      'target_name': 'node_crates',
+      'type': 'none',
+      'toolsets': ['host', 'target'],
+`,
+      to: `      'target_name': 'node_crates',
+      'type': 'none',
+      'toolsets': ['host', 'target'],
+      'conditions': [
+        ['_toolset=="host" and build_type=="Release"', {
+          'variables': {
+            'cargo_build_flags': [],
+            'node_crates_libpath': '<(SHARED_INTERMEDIATE_DIR)/release/<(STATIC_LIB_PREFIX)node_crates<(STATIC_LIB_SUFFIX)',
+          },
+        }],
+        ['_toolset=="host" and build_type!="Release"', {
+          'variables': {
+            'cargo_build_flags': [],
+            'node_crates_libpath': '<(SHARED_INTERMEDIATE_DIR)/debug/<(STATIC_LIB_PREFIX)node_crates<(STATIC_LIB_SUFFIX)',
+          },
+        }],
+      ],
+`,
+      applied: `'_toolset=="host"`,
+    },
+  ],
+};
+
 /* The NDK headers define B0 as a termios flag, which collides with V8's. */
 const ANDROID_CONSTANTS_ARM: Patch = {
   file: "deps/v8/src/codegen/arm/constants-arm.h",
