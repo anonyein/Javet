@@ -334,15 +334,59 @@ const ANDROID_CONFIGURE_PY_ARM_FPU: Patch = {
  * crates.gyp builds node_crates for both the host and the target toolset, but
  * with cargo_rust_target set it passes --target <android triple> to both and
  * points both linkers at the Android archive, so host tools like mksnapshot
- * fail to link with `Relocations in generic ELF (EM: 184)`. Restrict the
- * Android target selection to the target toolset and let the host toolset
- * build for the build machine.
+ * fail to link with `Relocations in generic ELF (EM: 183)` (`file in wrong
+ * format`). The Android triple has to be restricted to the target toolset so
+ * that the host toolset builds node_crates for the build machine instead.
+ *
+ * The selection has to be written as a `conditions` section *inside* a
+ * `variables` section rather than the other way around. gyp duplicates targets
+ * per toolset before it processes variables and conditions, so `_toolset` is
+ * available in either form, but a `variables` section inside a `conditions`
+ * section only reaches subdicts of the target, and crates.gyp keeps its cargo
+ * actions inside a sibling `OS=="win"` condition that gyp merges afterwards.
+ * @see: tools/gyp/pylib/gyp/input.py (ProcessVariablesAndConditionsInDict)
+ *
+ * The toolset dependent values also cannot reuse the names cargo_build_flags
+ * and node_crates_libpath, because gyp merges lists rather than replacing them,
+ * so the host flags are published under separate names and both toolsets read
+ * the final value through crates_flags and crates_libpath.
  */
 const CRATES_GYP_HOST_TOOLSET: Patch = {
   file: "deps/crates/crates.gyp",
-  reason: "Build node_crates for the host when cross-compiling to Android",
+  reason: "Build node_crates for the host toolset when cross-compiling to Android",
   os: [OS.Android],
   replacements: [
+    // Publish the host counterparts of the two Release variables.
+    {
+      from: `      'variables': {
+        'cargo_build_flags': ['--release'],
+      },
+`,
+      to: `      'variables': {
+        'cargo_build_flags': ['--release'],
+        'cargo_build_flags_host': ['--release'],
+        'node_crates_libpath_host': '<(SHARED_INTERMEDIATE_DIR)/release/<(STATIC_LIB_PREFIX)node_crates<(STATIC_LIB_SUFFIX)',
+        'node_crates_libpath_target': '<(SHARED_INTERMEDIATE_DIR)/<(cargo_rust_target)/release/<(STATIC_LIB_PREFIX)node_crates<(STATIC_LIB_SUFFIX)',
+      },
+`,
+      applied: `'cargo_build_flags_host': ['--release'],`,
+    },
+    // And of the two Debug ones.
+    {
+      from: `      'variables': {
+        'cargo_build_flags': [],
+      },
+`,
+      to: `      'variables': {
+        'cargo_build_flags': [],
+        'cargo_build_flags_host': [],
+        'node_crates_libpath_host': '<(SHARED_INTERMEDIATE_DIR)/debug/<(STATIC_LIB_PREFIX)node_crates<(STATIC_LIB_SUFFIX)',
+        'node_crates_libpath_target': '<(SHARED_INTERMEDIATE_DIR)/<(cargo_rust_target)/debug/<(STATIC_LIB_PREFIX)node_crates<(STATIC_LIB_SUFFIX)',
+      },
+`,
+      applied: `'cargo_build_flags_host': [],`,
+    },
+    // Pick per toolset. The host only differs once a cross build is in play.
     {
       from: `      'target_name': 'node_crates',
       'type': 'none',
@@ -351,22 +395,30 @@ const CRATES_GYP_HOST_TOOLSET: Patch = {
       to: `      'target_name': 'node_crates',
       'type': 'none',
       'toolsets': ['host', 'target'],
-      'conditions': [
-        ['_toolset=="host" and build_type=="Release"', {
-          'variables': {
-            'cargo_build_flags': [],
-            'node_crates_libpath': '<(SHARED_INTERMEDIATE_DIR)/release/<(STATIC_LIB_PREFIX)node_crates<(STATIC_LIB_SUFFIX)',
-          },
-        }],
-        ['_toolset=="host" and build_type!="Release"', {
-          'variables': {
-            'cargo_build_flags': [],
-            'node_crates_libpath': '<(SHARED_INTERMEDIATE_DIR)/debug/<(STATIC_LIB_PREFIX)node_crates<(STATIC_LIB_SUFFIX)',
-          },
-        }],
-      ],
+      'variables': {
+        'conditions': [
+          ['_toolset=="host" and cargo_rust_target!=""', {
+            'crates_flags': ['<@(cargo_build_flags_host)'],
+            'crates_libpath': '<(node_crates_libpath_host)',
+          }, {
+            'crates_flags': ['<@(cargo_build_flags)'],
+            'crates_libpath': '<(node_crates_libpath_target)',
+          }],
+        ],
+      },
 `,
-      applied: `'_toolset=="host"`,
+      applied: `'_toolset=="host" and cargo_rust_target!=""'`,
+    },
+    // Both cargo actions and the link settings read the resolved values.
+    {
+      from: `'<(node_crates_libpath)'`,
+      to: `'<(crates_libpath)'`,
+      all: true,
+    },
+    {
+      from: `'<@(cargo_build_flags)',`,
+      to: `'<@(crates_flags)',`,
+      all: true,
     },
   ],
 };
@@ -484,6 +536,7 @@ const PATCHES: readonly Patch[] = [
   V8_TLS_MODEL_LOCAL_HEAP,
   ANDROID_CONFIGURE_PY,
   CONFIGURE_PY_CARGO_TARGET,
+  CRATES_GYP_HOST_TOOLSET,
   androidConfigurePyIntl(false),
   androidConfigurePyIntl(true),
   ANDROID_CONFIGURE_PY_ARM_FPU,
