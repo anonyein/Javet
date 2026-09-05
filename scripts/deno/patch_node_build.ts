@@ -231,10 +231,11 @@ const V8_TLS_MODEL_LOCAL_HEAP: Patch = {
  *
  * Temporal needs more than --v8-enable-temporal-support here. Its Rust half,
  * node_crates, is built by cargo, and configure.py only pins cargo_rust_target
- * for Windows and macOS x86-64, so an Android build would compile the crate for
- * the Linux host and fail to link. Pass the Android triple and point cargo at
- * the NDK linker for it. The Rust standard library for that triple has to be
- * installed too, e.g. `rustup target add aarch64-linux-android`.
+ * for Windows and macOS x86-64 (Node.js v26 always writes it into config.gypi,
+ * so GYP_DEFINES no longer reach it), hence it is passed through the
+ * CARGO_RUST_TARGET environment variable that the CONFIGURE_PY_CARGO_TARGET
+ * patch teaches configure.py to read. The Rust standard library for that
+ * triple has to be installed too, e.g. `rustup target add aarch64-linux-android`.
  */
 const ANDROID_CONFIGURE_PY: Patch = {
   file: "android_configure.py",
@@ -262,9 +263,28 @@ os.environ['CARGO_TARGET_' + RUST_TARGET.upper().replace('-', '_') + '_LINKER'] 
       from: `GYP_DEFINES += " android_ndk_path=" + android_ndk_path
 `,
       to: `GYP_DEFINES += " android_ndk_path=" + android_ndk_path
-GYP_DEFINES += " cargo_rust_target=" + RUST_TARGET
+os.environ['CARGO_RUST_TARGET'] = RUST_TARGET
 `,
-      applied: `GYP_DEFINES += " cargo_rust_target=" + RUST_TARGET`,
+      applied: `os.environ['CARGO_RUST_TARGET'] = RUST_TARGET`,
+    },
+  ],
+};
+
+/*
+ * Node.js v26 always writes cargo_rust_target into config.gypi (empty unless
+ * Windows or macOS x64), which shadows the GYP_DEFINES value, so the Android
+ * Rust target has to come in through an environment variable instead.
+ */
+const CONFIGURE_PY_CARGO_TARGET: Patch = {
+  file: "configure.py",
+  reason: "Let CARGO_RUST_TARGET override cargo_rust_target for Android",
+  os: [OS.Android],
+  replacements: [
+    {
+      from: `  o['variables']['cargo_rust_target'] = ''
+`,
+      to: `  o['variables']['cargo_rust_target'] = os.environ.get('CARGO_RUST_TARGET', '')
+`,
     },
   ],
 };
@@ -417,6 +437,7 @@ const PATCHES: readonly Patch[] = [
   V8_TLS_MODEL,
   V8_TLS_MODEL_LOCAL_HEAP,
   ANDROID_CONFIGURE_PY,
+  CONFIGURE_PY_CARGO_TARGET,
   androidConfigurePyIntl(false),
   androidConfigurePyIntl(true),
   ANDROID_CONFIGURE_PY_ARM_FPU,
