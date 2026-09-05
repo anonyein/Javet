@@ -39,9 +39,7 @@ endif()
 # so the platforms link it by path rather than through importLibraries. cargo
 # nests it under the Rust target triple whenever Node.js pins one (Windows,
 # macOS x86-64, Android) and writes it straight under the profile when it
-# doesn't, so search for it rather than spell out every layout. Android is the
-# exception: it cross compiles, so both layouts exist side by side and the
-# triple has to be named explicitly.
+# doesn't, so search for it rather than spell out every layout.
 # @see: deps/crates/crates.gyp, tools/v8_gypfiles/v8.gyp
 if(CMAKE_SYSTEM_NAME STREQUAL "Android")
     set(nodeReleaseDir ${NODE_DIR}/out.${CMAKE_ANDROID_ARCH}.${OUT_DIR_SUFFIX}/Release)
@@ -51,25 +49,15 @@ endif()
 if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
     file(GLOB_RECURSE nodeCratesLibraries ${nodeReleaseDir}/obj/global_intermediate/node_crates.lib)
 elseif(CMAKE_SYSTEM_NAME STREQUAL "Android")
-    # An Android build cross compiles, so cargo archives node_crates twice: once
-    # under the Rust target triple for the target toolset, and once straight
-    # under the profile for the host tools that link it (mksnapshot). Only the
-    # former is loadable here, and a recursive search would return both and pick
-    # whichever sorts first, which is the host archive for x86_64. So spell the
-    # triple out instead of searching.
-    if(CMAKE_ANDROID_ARCH STREQUAL "arm")
-        set(nodeCratesTriple armv7-linux-androideabi)
-    elseif(CMAKE_ANDROID_ARCH STREQUAL "arm64")
-        set(nodeCratesTriple aarch64-linux-android)
-    elseif(CMAKE_ANDROID_ARCH STREQUAL "x86")
-        set(nodeCratesTriple i686-linux-android)
-    elseif(CMAKE_ANDROID_ARCH STREQUAL "x86_64")
-        set(nodeCratesTriple x86_64-linux-android)
-    else()
-        message(FATAL_ERROR "Android on ${CMAKE_ANDROID_ARCH} is not supported.")
-    endif()
-    file(GLOB nodeCratesLibraries
-        ${nodeReleaseDir}/obj/gen/${nodeCratesTriple}/release/libnode_crates.a)
+    # Android is always cross compiled, so Node.js builds node_crates twice into
+    # the same shared intermediate directory: once natively for the host toolset
+    # that mksnapshot links against, and once for the Android triple. Only the
+    # latter can be linked here, and the host one is the copy without a triple
+    # directory, so drop it. The glob is sorted, so leaving it in would pick the
+    # host archive for x86_64 alone (release sorts before x86_64-linux-android)
+    # while every other CPU arch kept working.
+    file(GLOB_RECURSE nodeCratesLibraries ${nodeReleaseDir}/obj/gen/libnode_crates.a)
+    list(FILTER nodeCratesLibraries EXCLUDE REGEX "/obj/gen/release/")
 else()
     file(GLOB_RECURSE nodeCratesLibraries ${nodeReleaseDir}/obj/gen/libnode_crates.a)
 endif()
