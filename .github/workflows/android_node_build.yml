@@ -184,6 +184,10 @@ jobs:
         name: javet-android-node-x86_64-${{ env.JAVET_VERSION }}-non-i18n
         path: android/javet-android/src/main/jniLibs/x86_64
 
+    - name: Apply await_deep patch (cpp + java)
+      working-directory: ${{ env.ROOT }}/Javet
+      run: python3 scripts/python/patch_await_deep.py
+
     - name: Build the Artifact
       run: |
         cd ${{ env.ROOT }}/Javet/scripts/python

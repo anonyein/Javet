@@ -181,7 +181,11 @@ def patch_cpp_await(repo_root: pathlib.Path, dry_run: bool) -> bool:
             int idleRounds = 0;
             int roundsLeft = 4096;
             do {
-                bool flushedAny = false;
+                // dispatchedAny records whether this round dispatched anything at
+                // all. It has to be separate from the inner loop's condition,
+                // which is always false once that loop exits, so reusing it here
+                // would silently count a round that did work as an idle one.
+                bool dispatchedAny = false;
                 {
                     auto v8Locker = GetUniqueV8Locker();
                     auto v8IsolateScope = GetV8IsolateScope();
@@ -194,12 +198,12 @@ def patch_cpp_await(repo_root: pathlib.Path, dry_run: bool) -> bool:
                     // Keep flushing the V8 isolate foreground task queue until it
                     // is momentarily empty - each foreground task may queue more
                     // microtasks, timers, async work, or beforeExit callbacks.
-                    do {
-                        flushedAny = v8PlatformPointer->FlushForegroundTasks(v8Isolate);
-                    } while (flushedAny);
+                    while (v8PlatformPointer->FlushForegroundTasks(v8Isolate)) {
+                        dispatchedAny = true;
+                    }
                 }
                 hasMoreTasks = uv_loop_alive(loop);
-                if (hasMoreTasks || flushedAny) {
+                if (hasMoreTasks || dispatchedAny) {
                     idleRounds = 0;
                     continue;
                 }
