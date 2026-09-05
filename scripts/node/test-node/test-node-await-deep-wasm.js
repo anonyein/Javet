@@ -17,7 +17,7 @@
 
 "use strict";
 
-// Self-contained probe for the RunTillNoMoreTasksDeep patch.
+// Probe for the RunTillNoMoreTasksDeep patch.
 //
 // WebAssembly.instantiate() compiles on a V8 background thread and posts its
 // completion callback back to the isolate as a foreground task. The nested
@@ -25,12 +25,23 @@
 // globalThis.wasmResult === null until that callback runs and every layer of
 // microtask continuation has drained.
 //
-// javet.v8.awaitDeep() is called ONCE, inline, right after kicking off the
-// async work. If the Deep patch works, wasmResult is already 5 when logged.
-// If the race is still present, it logs null.
+// This script only kicks the async work off. The await has to come from the
+// host, because V8AwaitMode only takes effect through V8Runtime.await*():
 //
-// Do NOT call awaitDeep() twice: the original bug is "null on first call,
-// value on second", so a second await would mask exactly what we test.
+//     nodeRuntime.getExecutor(scriptFile).executeVoid();
+//     nodeRuntime.awaitDeep();                        // the patched mode
+//     nodeRuntime.getGlobalObject().getInteger("wasmResult");
+//
+// Expected: 5 with awaitDeep(), and possibly null with the default await(),
+// which is the race the patch removes. Await exactly once - the original bug
+// is "null on the first call, value on the second", so a second await would
+// mask what is being tested.
+//
+// Do not try to await from inside this script. `javet` is not a Node.js global:
+// it only exists if the host registers JavetJVMInterceptor, and even then
+// javet.v8 exposes gc() alone, so javet.v8.awaitDeep is undefined. Awaiting
+// from script would also re-enter uv_run and process.beforeExit from inside a
+// JS callback.
 
 globalThis.wasmResult = null;
 
@@ -55,9 +66,3 @@ globalThis.wasmResult = null;
 
   globalThis.wasmResult = await loadWasm();
 })();
-
-// Single, inline deep await. No polling, no second call.
-javet.v8.awaitDeep();
-
-// Deep patch working => 5. Race still present => null.
-console.log(globalThis.wasmResult);
