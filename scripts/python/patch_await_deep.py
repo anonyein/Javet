@@ -185,18 +185,31 @@ def patch_cpp_await(repo_root: pathlib.Path, dry_run: bool) -> bool:
         // and reports whether any actually dispatched.
         if (awaitMode == RunTillNoMoreTasksDeep) {
             constexpr uv_run_mode uvRunMode = UV_RUN_ONCE;
+            // Bounds. Both exist to stop a task that reschedules itself from
+            // pinning this thread, and the unique locker with it, forever. On
+            // either bound the drain is abandoned rather than finished, so the
+            // function reports that tasks remain - see moreTasksRemain below.
+            constexpr int maxRounds = 4096;
+            constexpr int maxFlushesPerRound = 4096;
             uv_loop_t* loop = nodeCommonSetup ? nodeCommonSetup->event_loop() : &uvLoop;
             node::Environment* env = nodeCommonSetup ? nodeCommonSetup->env() : nodeEnvironment.get();
-            // Two consecutive genuinely-empty rounds => done. Upper bound
-            // guards against pathological self-rescheduling loops.
+            // Two consecutive rounds that neither dispatch a task nor leave the
+            // loop alive => settled.
             int idleRounds = 0;
-            int roundsLeft = 4096;
-            do {
+            int roundsLeft = maxRounds;
+            // beforeExit is emitted once per drain, matching Node.js: it fires
+            // when the loop is about to empty, and again only if a handler
+            // scheduled more work. Without this flag the confirmation round
+            // would emit it a second time on an already settled runtime.
+            bool beforeExitEmitted = false;
+            bool settled = false;
+            while (roundsLeft-- > 0) {
                 // dispatchedAny records whether this round dispatched anything at
                 // all. It has to be separate from the inner loop's condition,
                 // which is always false once that loop exits, so reusing it here
                 // would silently count a round that did work as an idle one.
                 bool dispatchedAny = false;
+                bool flushBoundHit = false;
                 {
                     auto v8Locker = GetUniqueV8Locker();
                     auto v8IsolateScope = GetV8IsolateScope();
@@ -209,18 +222,33 @@ def patch_cpp_await(repo_root: pathlib.Path, dry_run: bool) -> bool:
                     // Keep flushing the V8 isolate foreground task queue until it
                     // is momentarily empty - each foreground task may queue more
                     // microtasks, timers, async work, or beforeExit callbacks.
+                    // Bounded: a task that re-posts itself would otherwise spin
+                    // here holding the unique locker, which no other thread can
+                    // then acquire.
+                    int flushesLeft = maxFlushesPerRound;
                     while (v8PlatformPointer->FlushForegroundTasks(v8Isolate)) {
                         dispatchedAny = true;
+                        if (--flushesLeft <= 0) {
+                            flushBoundHit = true;
+                            break;
+                        }
                     }
+                }
+                if (flushBoundHit) {
+                    LOG_ERROR("Gave up flushing Node.js isolate foreground tasks; more tasks remain.");
+                    break;
                 }
                 hasMoreTasks = uv_loop_alive(loop);
                 if (hasMoreTasks || dispatchedAny) {
+                    // Work happened, so the loop is not about to empty and a
+                    // later beforeExit would be a fresh one.
+                    beforeExitEmitted = false;
                     idleRounds = 0;
                     continue;
                 }
-                // Loop momentarily empty. Give process.beforeExit handlers a
-                // chance to schedule more work, then re-check.
-                {
+                if (!beforeExitEmitted) {
+                    // Loop momentarily empty. Give process.beforeExit handlers a
+                    // chance to schedule more work, then re-check.
                     auto v8Locker = GetUniqueV8Locker();
                     auto v8IsolateScope = GetV8IsolateScope();
                     V8HandleScope v8HandleScope(v8Isolate);
@@ -228,18 +256,31 @@ def patch_cpp_await(repo_root: pathlib.Path, dry_run: bool) -> bool:
                     auto v8ContextScope = GetV8ContextScope(v8Context);
                     // node::EmitProcessBeforeExit is thread-safe.
                     node::EmitProcessBeforeExit(env);
+                    beforeExitEmitted = true;
                     bool flushedAfterExit = v8PlatformPointer->FlushForegroundTasks(v8Isolate);
                     hasMoreTasks = uv_loop_alive(loop) || flushedAfterExit;
-                }
-                if (hasMoreTasks) {
-                    idleRounds = 0;
-                    continue;
+                    if (hasMoreTasks) {
+                        // A beforeExit handler scheduled more work, so the next
+                        // time the loop empties it earns another beforeExit.
+                        beforeExitEmitted = false;
+                        idleRounds = 0;
+                        continue;
+                    }
                 }
                 if (++idleRounds >= 2) {
+                    settled = true;
                     break;
                 }
-            } while (--roundsLeft > 0);
-            return hasMoreTasks;
+            }
+            // Only a settled drain may report that nothing is left. Exhausting
+            // either bound means the drain was abandoned mid-flight, and saying
+            // "no more tasks" there would strand callers that loop on the return
+            // value.
+            const bool moreTasksRemain = settled ? hasMoreTasks : true;
+            if (!settled && roundsLeft <= 0) {
+                LOG_ERROR("Gave up draining Node.js tasks after the round limit; more tasks remain.");
+            }
+            return moreTasksRemain;
         }
         // PatchAwaitDeep/await-applied END
 '''
@@ -382,13 +423,32 @@ def main(argv: list) -> int:
         return 1
     logging.info('repo root = %s', repo_root)
     logging.info('dry-run = %s', args.check)
-    ok = True
-    ok &= patch_cpp_enums(repo_root, args.check)
-    ok &= patch_cpp_await(repo_root, args.check)
-    ok &= patch_java_enum(repo_root, args.check)
-    ok &= patch_java_awaitdeep(repo_root, args.check)
-    if not ok:
-        logging.error('one or more patches failed - see above')
+    sub_patches = (
+        patch_cpp_enums,
+        patch_cpp_await,
+        patch_java_enum,
+        patch_java_awaitdeep,
+    )
+    # Probe every sub-patch before writing anything. Each one writes its file as
+    # soon as it succeeds, so applying them straight through would leave the
+    # earlier files modified when a later anchor turns out to be missing - a
+    # half-patched tree that no longer matches what this script describes.
+    # Probing first keeps the all-or-nothing promise documented above. The list
+    # comprehension is deliberate: every anchor gets reported, not just the
+    # first missing one.
+    logging.info('probing all 4 anchors before writing')
+    if not all([sub_patch(repo_root, True) for sub_patch in sub_patches]):
+        logging.error('one or more anchors are missing - nothing was modified')
+        return 2
+    if args.check:
+        logging.info('all 4 patches would apply (or are already present)')
+        return 0
+    logging.info('all anchors resolved, applying')
+    # Every anchor resolved a moment ago, so a failure here means the tree
+    # changed underneath us. Stop at the first one rather than writing the rest
+    # on top of a tree that is already not what we probed.
+    if not all(sub_patch(repo_root, False) for sub_patch in sub_patches):
+        logging.error('a patch failed while writing - see above')
         return 2
     logging.info('all 4 patches applied (or already present)')
     return 0
