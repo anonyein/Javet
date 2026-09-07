@@ -10,3 +10,4 @@ Release Notes 6.0.x
 * Upgraded Visual Studio 2026 to `v18.9.2 <https://learn.microsoft.com/en-us/visualstudio/releases/2026/release-notes#18.9.2>`_
 * Removed ``isHarmonyTemporal()``, ``setHarmonyTemporal()`` from ``NodeFlags`` because Node.js v26 enables Temporal by default
 * Upgraded Android NDK to ``r29`` for Node.js mode
+* Fixed ``JavetEnginePool.close()`` waiting out a whole ``poolDaemonCheckIntervalMillis`` (1000ms by default) before the daemon noticed the quitting flag

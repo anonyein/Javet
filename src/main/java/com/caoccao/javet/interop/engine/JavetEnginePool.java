@@ -372,6 +372,12 @@ public class JavetEnginePool<R extends V8Runtime> implements IJavetEnginePool<R>
                 }
             }
             synchronized (externalLock) {
+                if (quitting) {
+                    // The quitting flag may have been set while this pass was running,
+                    // in which case the notification from stopDaemon() was missed.
+                    // Skip the wait so that close() is not delayed by a whole interval.
+                    break;
+                }
                 try {
                     externalLock.wait(config.getPoolDaemonCheckIntervalMillis());
                 } catch (InterruptedException e) {
@@ -452,6 +458,9 @@ public class JavetEnginePool<R extends V8Runtime> implements IJavetEnginePool<R>
         IJavetLogger logger = config.getJavetLogger();
         logger.debug("JavetEnginePool.stopDaemon() begins.");
         quitting = true;
+        // Wake up the daemon so that it observes the quitting flag immediately
+        // instead of sleeping out the remainder of the check interval.
+        wakeUpDaemon();
         try {
             if (daemonThread != null) {
                 daemonThread.join();

@@ -100,6 +100,32 @@ public class TestJavetEnginePool extends BaseTestJavet {
     }
 
     @Test
+    public void testCloseWakesUpDaemon() throws Exception {
+        // This pool intentionally keeps the default daemon check interval so that a
+        // close() delegating to a sleeping daemon shows up as a ~1s pause.
+        final int poolDaemonCheckIntervalMillis = JavetEngineConfig.DEFAULT_POOL_DAEMON_CHECK_INTERVAL_MILLIS;
+        JavetEnginePool<?> pool = new JavetEnginePool<>();
+        pool.getConfig()
+                .setJSRuntimeType(v8Host.getJSRuntimeType())
+                .setPoolDaemonCheckIntervalMillis(poolDaemonCheckIntervalMillis);
+        try (IJavetEngine<?> engine = pool.getEngine()) {
+            assertEquals(2, engine.getV8Runtime().getExecutor("1 + 1").executeInteger());
+        }
+        // Give the daemon time to finish its pass and fall asleep.
+        TimeUnit.MILLISECONDS.sleep(poolDaemonCheckIntervalMillis / 10);
+        final long startTime = System.currentTimeMillis();
+        pool.close();
+        final long closeDurationMillis = System.currentTimeMillis() - startTime;
+        assertTrue(pool.isClosed());
+        assertEquals(0, pool.getActiveEngineCount());
+        assertEquals(pool.getConfig().getPoolMaxSize(), pool.getReleasedEngineCount());
+        assertTrue(
+                closeDurationMillis < poolDaemonCheckIntervalMillis / 2,
+                "close() took " + closeDurationMillis + "ms. It is supposed to wake up the daemon"
+                        + " instead of waiting out its " + poolDaemonCheckIntervalMillis + "ms check interval.");
+    }
+
+    @Test
     @Tag("performance")
     public void testDaemonThread() throws InterruptedException {
         javetEngineConfig.setWaitForEngineMaxRetryCount(5);
