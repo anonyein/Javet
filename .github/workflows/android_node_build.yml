@@ -9,7 +9,7 @@ on:
   workflow_dispatch:
 
 env:
-  JAVET_NODE_VERSION: 26.8.1
+  JAVET_NODE_VERSION: 26.8.2
   JAVET_VERSION: 6.0.0
   ROOT: /home/runner/work/Javet
 
