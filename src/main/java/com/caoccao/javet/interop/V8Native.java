@@ -202,6 +202,12 @@ class V8Native implements IV8Native {
     public native long[] getInternalStatistic();
 
     @Override
+    public native int getMicrotasksPolicy(long v8RuntimeHandle);
+
+    @Override
+    public native int getMicrotasksScopeDepth(long v8RuntimeHandle);
+
+    @Override
     public native int getPriority(long v8RuntimeHandle);
 
     @Override
@@ -251,6 +257,9 @@ class V8Native implements IV8Native {
 
     @Override
     public native boolean isMemorySaverModeEnabled(long v8RuntimeHandle);
+
+    @Override
+    public native boolean isRunningMicrotasks(long v8RuntimeHandle);
 
     @Override
     public native boolean isWeak(long v8RuntimeHandle, long v8ValueHandle, int v8ValueType);
@@ -533,6 +542,9 @@ class V8Native implements IV8Native {
     public native String objectToProtoString(long v8RuntimeHandle, long v8ValueHandle, int v8ValueType);
 
     @Override
+    public native void performMicrotaskCheckpoint(long v8RuntimeHandle);
+
+    @Override
     public native Object promiseCatch(
             long v8RuntimeHandle, long v8ValueHandle, int v8ValueType, long v8ValueFunctionHandle);
 
@@ -587,6 +599,9 @@ class V8Native implements IV8Native {
 
     @Override
     public native void registerGCPrologueCallback(long v8RuntimeHandle);
+
+    @Override
+    public native void registerMicrotasksCompletedCallback(long v8RuntimeHandle);
 
     @Override
     public native void registerNearHeapLimitCallback(long v8RuntimeHandle);
@@ -670,6 +685,9 @@ class V8Native implements IV8Native {
     public native void setMemorySaverModeEnabled(long v8RuntimeHandle, boolean enabled);
 
     @Override
+    public native void setMicrotasksPolicy(long v8RuntimeHandle, int microtasksPolicy);
+
+    @Override
     public native void setPriority(long v8RuntimeHandle, int priority);
 
     @Override
@@ -719,6 +737,9 @@ class V8Native implements IV8Native {
 
     @Override
     public native void unregisterGCPrologueCallback(long v8RuntimeHandle);
+
+    @Override
+    public native void unregisterMicrotasksCompletedCallback(long v8RuntimeHandle);
 
     @Override
     public native void unregisterNearHeapLimitCallback(long v8RuntimeHandle, long heapLimit);

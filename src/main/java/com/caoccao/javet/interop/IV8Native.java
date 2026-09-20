@@ -540,6 +540,22 @@ public interface IV8Native {
     long[] getInternalStatistic();
 
     /**
+     * Get the microtasks policy of the V8 runtime.
+     *
+     * @param v8RuntimeHandle the V8 runtime handle
+     * @return the microtasks policy
+     */
+    int getMicrotasksPolicy(long v8RuntimeHandle);
+
+    /**
+     * Get the microtasks scope depth of the V8 runtime.
+     *
+     * @param v8RuntimeHandle the V8 runtime handle
+     * @return the microtasks scope depth
+     */
+    int getMicrotasksScopeDepth(long v8RuntimeHandle);
+
+    /**
      * Get the priority of the V8 runtime.
      *
      * @param v8RuntimeHandle the V8 runtime handle
@@ -680,6 +696,14 @@ public interface IV8Native {
      * @return true if memory saver mode is enabled
      */
     boolean isMemorySaverModeEnabled(long v8RuntimeHandle);
+
+    /**
+     * Check if the V8 runtime is running microtasks.
+     *
+     * @param v8RuntimeHandle the V8 runtime handle
+     * @return true if the microtasks are being run
+     */
+    boolean isRunningMicrotasks(long v8RuntimeHandle);
 
     /**
      * Check if a V8 value is a weak reference.
@@ -1573,6 +1597,13 @@ public interface IV8Native {
     String objectToProtoString(long v8RuntimeHandle, long v8ValueHandle, int v8ValueType);
 
     /**
+     * Drain the microtask queue of the V8 runtime.
+     *
+     * @param v8RuntimeHandle the V8 runtime handle
+     */
+    void performMicrotaskCheckpoint(long v8RuntimeHandle);
+
+    /**
      * Register a catch handler on a Promise.
      *
      * @param v8RuntimeHandle       the V8 runtime handle
@@ -1744,6 +1775,13 @@ public interface IV8Native {
      * @param v8RuntimeHandle the V8 runtime handle
      */
     void registerGCPrologueCallback(long v8RuntimeHandle);
+
+    /**
+     * Register a microtasks completed callback for the V8 runtime.
+     *
+     * @param v8RuntimeHandle the V8 runtime handle
+     */
+    void registerMicrotasksCompletedCallback(long v8RuntimeHandle);
 
     /**
      * Register a near-heap-limit callback for the V8 runtime.
@@ -1985,6 +2023,14 @@ public interface IV8Native {
     void setMemorySaverModeEnabled(long v8RuntimeHandle, boolean enabled);
 
     /**
+     * Set the microtasks policy of the V8 runtime.
+     *
+     * @param v8RuntimeHandle  the V8 runtime handle
+     * @param microtasksPolicy the microtasks policy value
+     */
+    void setMicrotasksPolicy(long v8RuntimeHandle, int microtasksPolicy);
+
+    /**
      * Set the priority of the V8 runtime.
      *
      * @param v8RuntimeHandle the V8 runtime handle
@@ -2136,6 +2182,13 @@ public interface IV8Native {
      * @param v8RuntimeHandle the V8 runtime handle
      */
     void unregisterGCPrologueCallback(long v8RuntimeHandle);
+
+    /**
+     * Unregister the microtasks completed callback from the V8 runtime.
+     *
+     * @param v8RuntimeHandle the V8 runtime handle
+     */
+    void unregisterMicrotasksCompletedCallback(long v8RuntimeHandle);
 
     /**
      * Unregister the near-heap-limit callback from the V8 runtime.

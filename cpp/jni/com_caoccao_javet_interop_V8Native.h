@@ -393,6 +393,22 @@ JNIEXPORT jlongArray JNICALL Java_com_caoccao_javet_interop_V8Native_getInternal
 
 /*
  * Class:     com_caoccao_javet_interop_V8Native
+ * Method:    getMicrotasksPolicy
+ * Signature: (J)I
+ */
+JNIEXPORT jint JNICALL Java_com_caoccao_javet_interop_V8Native_getMicrotasksPolicy
+  (JNIEnv *, jobject, jlong);
+
+/*
+ * Class:     com_caoccao_javet_interop_V8Native
+ * Method:    getMicrotasksScopeDepth
+ * Signature: (J)I
+ */
+JNIEXPORT jint JNICALL Java_com_caoccao_javet_interop_V8Native_getMicrotasksScopeDepth
+  (JNIEnv *, jobject, jlong);
+
+/*
+ * Class:     com_caoccao_javet_interop_V8Native
  * Method:    getPriority
  * Signature: (J)I
  */
@@ -525,6 +541,14 @@ JNIEXPORT jboolean JNICALL Java_com_caoccao_javet_interop_V8Native_isInUse
  * Signature: (J)Z
  */
 JNIEXPORT jboolean JNICALL Java_com_caoccao_javet_interop_V8Native_isMemorySaverModeEnabled
+  (JNIEnv *, jobject, jlong);
+
+/*
+ * Class:     com_caoccao_javet_interop_V8Native
+ * Method:    isRunningMicrotasks
+ * Signature: (J)Z
+ */
+JNIEXPORT jboolean JNICALL Java_com_caoccao_javet_interop_V8Native_isRunningMicrotasks
   (JNIEnv *, jobject, jlong);
 
 /*
@@ -1113,6 +1137,14 @@ JNIEXPORT jstring JNICALL Java_com_caoccao_javet_interop_V8Native_objectToProtoS
 
 /*
  * Class:     com_caoccao_javet_interop_V8Native
+ * Method:    performMicrotaskCheckpoint
+ * Signature: (J)V
+ */
+JNIEXPORT void JNICALL Java_com_caoccao_javet_interop_V8Native_performMicrotaskCheckpoint
+  (JNIEnv *, jobject, jlong);
+
+/*
+ * Class:     com_caoccao_javet_interop_V8Native
  * Method:    promiseCatch
  * Signature: (JJIJ)Ljava/lang/Object;
  */
@@ -1245,6 +1277,14 @@ JNIEXPORT void JNICALL Java_com_caoccao_javet_interop_V8Native_registerGCEpilogu
  * Signature: (J)V
  */
 JNIEXPORT void JNICALL Java_com_caoccao_javet_interop_V8Native_registerGCPrologueCallback
+  (JNIEnv *, jobject, jlong);
+
+/*
+ * Class:     com_caoccao_javet_interop_V8Native
+ * Method:    registerMicrotasksCompletedCallback
+ * Signature: (J)V
+ */
+JNIEXPORT void JNICALL Java_com_caoccao_javet_interop_V8Native_registerMicrotasksCompletedCallback
   (JNIEnv *, jobject, jlong);
 
 /*
@@ -1441,6 +1481,14 @@ JNIEXPORT void JNICALL Java_com_caoccao_javet_interop_V8Native_setMemorySaverMod
 
 /*
  * Class:     com_caoccao_javet_interop_V8Native
+ * Method:    setMicrotasksPolicy
+ * Signature: (JI)V
+ */
+JNIEXPORT void JNICALL Java_com_caoccao_javet_interop_V8Native_setMicrotasksPolicy
+  (JNIEnv *, jobject, jlong, jint);
+
+/*
+ * Class:     com_caoccao_javet_interop_V8Native
  * Method:    setPriority
  * Signature: (JI)V
  */
@@ -1573,6 +1621,14 @@ JNIEXPORT void JNICALL Java_com_caoccao_javet_interop_V8Native_unregisterGCEpilo
  * Signature: (J)V
  */
 JNIEXPORT void JNICALL Java_com_caoccao_javet_interop_V8Native_unregisterGCPrologueCallback
+  (JNIEnv *, jobject, jlong);
+
+/*
+ * Class:     com_caoccao_javet_interop_V8Native
+ * Method:    unregisterMicrotasksCompletedCallback
+ * Signature: (J)V
+ */
+JNIEXPORT void JNICALL Java_com_caoccao_javet_interop_V8Native_unregisterMicrotasksCompletedCallback
   (JNIEnv *, jobject, jlong);
 
 /*
