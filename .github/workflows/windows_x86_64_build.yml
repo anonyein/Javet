@@ -57,6 +57,34 @@ jobs:
       run: |
         echo "${{ env.ROOT }}\google\depot_tools" >> $GITHUB_PATH
 
+    - name: Install Windows SDK 10.0.28000.0
+      shell: pwsh
+      run: |
+        $installer = "$env:RUNNER_TEMP\winsdksetup.exe"
+
+        # Windows SDK 10.0.28000.x
+        Invoke-WebRequest `
+          -Uri "https://go.microsoft.com/fwlink/?linkid=2376217" `
+          -OutFile $installer
+
+        $process = Start-Process `
+          -FilePath $installer `
+          -ArgumentList @(
+            "/q",
+            "/norestart",
+            "/ceip", "off",
+            "/features",
+            "OptionId.DesktopCPPx86",
+            "OptionId.DesktopCPPx64",
+            "OptionId.DesktopCPParm64"
+          ) `
+          -Wait `
+          -PassThru
+
+        if ($process.ExitCode -notin @(0, 3010)) {
+          throw "Windows SDK installer failed with exit code $($process.ExitCode)"
+        }
+
     - name: Build V8
       env:
         DEPOT_TOOLS_WIN_TOOLCHAIN: 0
