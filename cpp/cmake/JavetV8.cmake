@@ -55,6 +55,7 @@ list(APPEND includeDirs
     ${V8_DIR}/include
     ${V8_DIR}/third_party/abseil-cpp
     ${V8_DIR}/third_party/fp16/src/include
+    ${V8_DIR}/third_party/simdutf
     ${V8_RELEASE_DIR}/gen
     ${V8_RELEASE_DIR}/gen/include)
 if(DEFINED ENABLE_I18N)
