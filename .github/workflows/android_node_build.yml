@@ -16,6 +16,7 @@ env:
 jobs:
   build_javet_lib:
     strategy:
+      fail-fast: false
       matrix:
         include:
           - android_arch: arm64
@@ -86,9 +87,8 @@ jobs:
     - name: Build Node.js
       run: |
         cd ${{ env.ROOT }}
-        git clone https://github.com/nodejs/node.git
+        git clone --depth 1 --branch v${{ env.JAVET_NODE_VERSION }} https://github.com/nodejs/node.git
         cd node
-        git checkout v${{ env.JAVET_NODE_VERSION }}
         deno --allow-all ${{ env.ROOT }}/Javet/scripts/deno/patch_node_build.ts -p ./ --os android ${{ matrix.i18n_flag }}
         ./android-configure ${{ steps.setup-ndk.outputs.ndk-path }} 24 ${{ matrix.android_arch }}
         make -j4
