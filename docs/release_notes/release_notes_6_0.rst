@@ -6,6 +6,7 @@ Release Notes 6.0.x
 -----
 
 * Upgraded Node.js to ``v26.10.0`` `(2026-09-22) <https://nodejs.org/en/blog/release/v26.10.0>`_
+* Fixed ``resetContext()`` for Node.js snapshot runtimes to recreate the environment and restore the original snapshot state
 
 6.0.1
 -----
