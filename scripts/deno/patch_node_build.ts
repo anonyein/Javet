@@ -108,6 +108,13 @@ interface Patch {
   readonly os: readonly OS[];
   /** Restrict the patch to the i18n build (true) or the non-i18n one (false). */
   readonly i18n?: boolean;
+  /**
+   * Text whose presence in the file means upstream Node.js has adopted the
+   * fix, so the whole patch is skipped. It is checked before `applied` and
+   * `from`, which keeps the script working on both sides of the upstream
+   * change: older Node.js versions get the patch, newer ones go without.
+   */
+  readonly upstream?: string;
   readonly replacements: readonly Replacement[];
 }
 
@@ -121,11 +128,16 @@ const ALL_OS: readonly OS[] = Object.values(OS);
  * Temporal off for --with-intl=none. Port the action so Temporal survives a
  * non-i18n build. The action is inert for an i18n build.
  * @see: deps/v8/BUILD.gn (make_temporal_zoneinfo_cpp)
+ *
+ * Node.js v26.11.0 (nodejs/node#66183) ported the same action as the
+ * temporal_zoneinfo64_data target, so the patch is skipped once the upstream
+ * fix is detected and only applied to the older Node.js versions.
  */
 const V8_GYP_TEMPORAL_ZONEINFO: Patch = {
   file: "tools/v8_gypfiles/v8.gyp",
   reason: "Bake zoneinfo64.res in so that a non-i18n build keeps V8 Temporal",
   os: ALL_OS,
+  upstream: "'../../deps/crates/crates.gyp:temporal_zoneinfo64_data'",
   replacements: [
     {
       from: `            ['node_shared_temporal_capi=="false"', {
@@ -679,6 +691,13 @@ class PatchNodeBuild {
     }
 
     const originalContent = content;
+    if (patch.upstream !== undefined && content.includes(patch.upstream)) {
+      console.log(
+        `INFO: Skipped ${patch.file} because upstream Node.js has adopted the fix: ${patch.reason}.`
+      );
+      ++this.skipped;
+      return;
+    }
     for (const replacement of patch.replacements) {
       if (replacement.all) {
         // No occurrence left means there is nothing to do either way.

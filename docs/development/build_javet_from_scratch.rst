@@ -245,7 +245,7 @@ Why Patching Node.js?
 ---------------------
 
 * Static libraries: All static node libraries are ``<thin>`` libraries. The patch is to disable ``<thin>``.
-* Temporal: Node.js drops V8's Temporal whenever it is built without the bundled ICU, because V8 then links a baked-in copy of ``zoneinfo64.res`` that only V8's GN build knows how to generate (the ``make_temporal_zoneinfo_cpp`` action). The patch ports that action to ``gyp``, so ``--v8-enable-temporal-support`` also works for ``--without-intl``.
+* Temporal: Node.js drops V8's Temporal whenever it is built without the bundled ICU, because V8 then links a baked-in copy of ``zoneinfo64.res`` that only V8's GN build knows how to generate (the ``make_temporal_zoneinfo_cpp`` action). The patch ports that action to ``gyp``, so ``--v8-enable-temporal-support`` also works for ``--without-intl``. Node.js v26.11.0+ (nodejs/node#66183) ports the same action as the ``temporal_zoneinfo64_data`` target, so the patch detects that and skips itself.
 * Thread local storage: V8's ``V8_TLS_MODEL`` attribute makes the linker reject the shared library, so the patch drops it in favour of ``-ftls-model=global-dynamic``.
 * The flags: Many static node libraries are not compiled to `position independent code <https://en.wikipedia.org/wiki/Position-independent_code>`_ and link phase is broken with the following error. ``CFLAGS``, ``CXXFLAGS`` and ``LDFLAGS`` set ``-fPIC`` for every target. GYP appends them to each target of the target toolset via ``CFLAGS.target``, ``CXXFLAGS.target`` and ``LDFLAGS.target``.
 
