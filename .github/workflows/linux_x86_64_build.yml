@@ -36,7 +36,7 @@ jobs:
     - name: Setup Ubuntu
       run: |
         sudo apt-get update -y
-        sudo apt-get install -y execstack binutils build-essential libc++-dev libc++abi-dev
+        sudo apt-get install -y binutils build-essential libc++-dev libc++abi-dev
 
     - name: Setup Python
       uses: actions/setup-python@v6
@@ -153,7 +153,7 @@ jobs:
 
     - name: Setup Ubuntu
       run: |
-        sudo apt-get install -y execstack binutils wget
+        sudo apt-get install -y binutils wget
 
     - name: Setup Python
       uses: actions/setup-python@v6
